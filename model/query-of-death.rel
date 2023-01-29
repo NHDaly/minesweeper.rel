@@ -1,0 +1,34 @@
+// install
+
+value type GameCoord = Int,Int
+
+@inline def x[gc in GameCoord](v) = unpack(gc, :GameCoord, v, _)
+@inline def y[gc in GameCoord](v) = unpack(gc, :GameCoord, _, v)
+
+
+value type ScreenCoord = Int,Int
+
+@inline def x[sc in ScreenCoord](v) = unpack(sc, :ScreenCoord, v, _)
+@inline def y[sc in ScreenCoord](v) = unpack(sc, :ScreenCoord, _, v)
+
+@inline def ^SC = ^ScreenCoord
+
+bound view_center = ScreenCoord
+def view_center = ^SC[0,0]
+bound view_zoom = Float
+def view_zoom = 1.0
+
+// TODO: Adjustable? Make them into base relations?
+def view_width = 6//4
+def view_height = 4//8
+
+def in_view(gc in GameCoord) {
+    view_center.x - view_width*view_zoom <=
+        gc.x <=
+    view_center.x + view_width*view_zoom
+        and
+    view_center.y - view_height*view_zoom <=
+        gc.y <=
+    view_center.y + view_height*view_zoom
+}
+

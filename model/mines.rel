@@ -1,0 +1,80 @@
+// install
+
+value type GameCoord = Int,Int
+
+// @inline def x[gc in GameCoord](v) = unpack(gc, :GameCoord, v, _)
+// @inline def y[gc in GameCoord](v) = unpack(gc, :GameCoord, _, v)
+
+@inline def x[gc in GameCoord](v) = ^GameCoord[v, _](gc)
+@inline def y[gc in GameCoord](v) = ^GameCoord[_, v](gc)
+
+@inline def ^GC = ^GameCoord
+
+bound mine = GameCoord
+
+//@ondemand
+@inline
+def neighbor[gc in GameCoord] {
+    ^GameCoord[x2, y2]
+    from x2 in (cx-1; cx; cx+1), y2 in (cy-1; cy; cy+1)
+    where not (x2 = cx and y2 = cy)
+    from cx in gc.x, cy in gc.y
+}
+
+//@ondemand
+@inline
+def mine_count[gc in GameCoord] {
+    count[coord in neighbor[gc] :
+          mine(coord)]
+}
+
+bound test = GameCoord
+def correct_test(gc in test) {
+    not mine(gc)
+}
+
+//@ondemand
+def revealed(c in GameCoord) = correct_test(c)
+//@ondemand
+def revealed(c in GameCoord) {
+    neighbor[r](c)
+    from r
+    where
+        revealed(r)
+        and not exists(r.mine_count)
+        // dummy bounds
+        and is_in_demand(c)
+}
+// dummy bounds
+def is_in_demand = in_view
+
+bound flag = GameCoord
+def correct_flag(gc in flag) {
+    mine(gc)
+}
+
+// Silly reset logic to work around FD-inference bug
+bound init = true
+bound ever_init = true
+def insert:init = not ever_init
+def delete:init = init
+def insert:ever_init = true
+def insert:reset = init
+def delete:reset = reset
+
+bound reset = true
+def insert:mine = ^GameCoord[(1;2), (1;2)], init
+def insert:test = ^GameCoord[(1;2), (1;2)], init
+def insert:flag = ^GameCoord[(1;2), (1;2)], init
+def delete:mine = mine, reset
+def delete:test = test, reset
+def delete:flag = flag, reset
+
+def NUM_MINES = 40
+def insert:mine = ^GameCoord[x,y], reset
+    from i in range[1, NUM_MINES, 1], x, y
+    where
+        x = -10 + float_int_convert[round[20 * random_threefry_float64[random_uint64[], i]]]
+    and y = -10 + float_int_convert[round[20 * random_threefry_float64[uint64[1]+random_uint64[], i]]]
+
+
