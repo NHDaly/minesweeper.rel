@@ -1,9 +1,9 @@
 // install
 
-value type GameCoord = Int,Int
+value type Coord = Int,Int
 
-@inline def x[gc in GameCoord](v) = unpack(gc, :GameCoord, v, _)
-@inline def y[gc in GameCoord](v) = unpack(gc, :GameCoord, _, v)
+@inline def x[c in Coord](v) = unpack(c, :Coord, v, _)
+@inline def y[gc in Coord](v) = unpack(gc, :Coord, _, v)
 
 
 value type ScreenCoord = Int,Int
@@ -22,7 +22,7 @@ def view_zoom = 1.0
 def view_width = 6//4
 def view_height = 4//8
 
-def in_view(gc in GameCoord) {
+def in_view(gc in Coord) {
     view_center.x - view_width*view_zoom <=
         gc.x <=
     view_center.x + view_width*view_zoom
