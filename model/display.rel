@@ -52,12 +52,15 @@ def display_grid {
     ]
 }
 
+def victory { count[flag] = count[mine] }
 def game_over = exists(c : test(c) and mine(c))
 @inline def count0[R] = count[R] <++ 0
 def score = count0[correct_flag] - (count0[flag] - count0[correct_flag])
 
 def display = if game_over then
         "Game Over\nScore: %score\n\n%display_grid"
+    else if victory then
+        "Victory!\nScore: %score\n\n%display_grid"
     else
         display_grid
-    end
+    end end
