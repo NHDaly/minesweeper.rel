@@ -46,3 +46,5 @@ bound flag = Coord
 def correct_flag(c in flag) {
     mine(c)
 }
+
+ic { disjoint(flag, test) }
