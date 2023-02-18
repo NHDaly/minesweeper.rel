@@ -1,0 +1,10 @@
+// install
+
+// Install these actions so that we can precompile the large, inlined coordinate
+// conversion definitions. This way, they'll be compiled once, and cached, and the
+// Only thing that will flow through them is new data.
+bound insert_test = Int, Int
+def insert:test = coords:gc[^ScreenCoord[r, c]] from r,c where insert_test(r, c)
+
+bound insert_flag = ScreenCoord
+def insert:flag = coords:gc[^ScreenCoord[r, c]] from r,c where insert_flag(r, c)

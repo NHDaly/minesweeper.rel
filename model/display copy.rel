@@ -22,8 +22,6 @@ def cell[c in Coord] = {
     end end end
 }
 
-// There is currently a bug for this definition in the vectorized evaluator.
-@og
 def display_cell[row in view_r, col in view_c] {
     cell[c]
     from c, sc

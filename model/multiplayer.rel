@@ -1,0 +1,60 @@
+//install
+
+// constructed by timestamp + random number?
+entity type Player = String, String // username and password (not stored)
+
+// All the players are stored here
+bound Player = Entity
+bound player_username = Player, String
+
+bound cell_owner = Coord, Player
+
+def player_score[p in Player] = sum[{
+    { f, 50 : correct_flag(f) and cell_owner[f] = p };
+    { r, 1 : revealed(r) and cell_owner[r] = p };
+    // (don't allow negative literals)
+    { m, -500 from m where mine(m) and cell_owner[m] = p };
+}]
+
+// This should not be inserted to, rather it's an IDB
+// that should be set inside the query body whenever inserting anything
+// TODO: Should we require the user be "registered"/inserted?
+//bound current_user = Player
+bound current_user = Entity   // for now, no.
+
+def insert:cell_owner[t in Coord](p in current_user) { insert:test(t) }
+def insert:cell_owner[f in Coord](p in current_user) { insert:flag(f) }
+def insert:cell_owner[r in Coord](p in current_user) { revealed_this_turn(r) }
+def insert:cell_timestamp[c] = datetime_now, insert:cell_owner(c, _)
+
+// Compute the set of coordinates being revealed this turn.
+// `new_revealed` is equivalent to the currently revealed coordinates, but
+// at the time when inserts are performed, it also includes the newly
+// inserted test and everything that reveals in turn.
+// `revealed_this_turn`, then, takes the diff, to compute the newly
+// revelead set of coordinates.
+def revealed_this_turn = diff[new_revealed, revealed]
+
+def new_revealed(c in Coord) = revealed(c)
+def new_revealed(c in Coord) = insert:test(c)
+def new_revealed(c in Coord) {
+    neighbor[r](c)
+    from r
+    where
+        new_revealed(r)
+        and not exists(r.mine_count)
+        and grid(c)
+}
+
+/*
+// TODO: Is it possible to derive the set of revealed cells owned by a player?
+// Maybe... but maybe only if we keep a timestamp of when a cell was revealed.
+// Don't support overloading base and derived relations
+bound cell_owner_base = Coord, Player
+def insert:cell_owner_base[t in Coord](p in Player) = insert:test(t) and current_user(p)
+def insert:cell_owner_base[f in Coord](p in Player) = insert:flag(f) and current_user(p)
+
+def cell_owner = cell_owner_base
+def cell_owner[r in revealedr(p in Player) = insert:flag(f) and current_user(p)
+*/
+

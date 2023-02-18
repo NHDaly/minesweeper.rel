@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>CSS Grid starting point</title>
+    <style>
+        body {
+            width: 90%;
+            max-width: 900px;
+            margin: 2em auto;
+            font: .9em/1.2 Arial, Helvetica, sans-serif;
+        }
+
+        #credentials {
+            border-radius: 5px;
+            padding: 10px;
+            background-color: rgb(207,232,220);
+            border: 2px solid rgb(79,185,227);
+            margin: 10px;
+        }
+
+        .container > div {
+            border-radius: 5px;
+            padding: 10px;
+            background-color: rgb(207,232,220);
+            border: 2px solid rgb(79,185,227);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(17, 20px);
+            grid-template-rows: repeat(30, 20px);
+            gap: 2px;
+        }
+
+    </style>
+
+    <script>
+
+    const NUM_ROWS = 17
+    const NUM_COLS = 17
+    window.addEventListener("load", function(){
+        var G = document.getElementById('grid');
+        for (var row = 0; row < NUM_ROWS; row++) {
+            for (var col = 0; col < NUM_COLS; col++) {
+                G.appendChild(make_cell(row, col));
+            }
+        }
+
+        fetch(`/display`)
+            .then((response) => response.json())
+            .then((data) => {
+                console.log('Got display data:', data)
+                for (var i = 0; i < data.length; i++) {
+                    let {row, col, cell} = data[i]
+                    c = get_cell(G, row, col)
+                    c.setHTML(cell)
+                }
+            });
+    })
+
+    function get_cell(G, row, col) {
+        return G.children[row * NUM_COLS + col]
+    }
+
+    //function make_cell(row, col) {
+    //    // <form action="/action_page.php">
+    //    let cell = document.createElement("form")
+    //    cell.action = "/do_action"
+    //    let button = document.createElement("input")
+    //    button.type = "submit"
+    //    cell.appendChild(button)
+    //    return cell;
+    //}
+    function make_cell(row, col) {
+        let cell = document.createElement("button")
+        cell.onclick = function() {
+            fetch(`/test_cell?row=${row}&col=${col}`)
+                .then((response) => response.json())
+                .then((data) => console.log(data));
+        }
+        return cell;
+    }
+    </script>
+
+  </head>
+
+<body>
+    <h1>Simple grid example</h1>
+
+    <div id="credentials">
+        ... TODO: make this work...<br>
+        You can play anonymously, but to save your score, sign in with a username & password:
+        <div>
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username">
+        </div>
+
+        <div>
+            <label for="pass">Password:</label>
+            <input type="password" id="pass" name="password"
+                   minlength="8" required>
+        </div>
+
+    </div>
+
+    <div>
+        Current Coordinates:
+            <span id="center_x">0</span>,
+            <span id="center_y">0</span>
+    </div>
+
+    <div class="container" id="grid"></div>
+
+
+</body>
+
+</html>

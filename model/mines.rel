@@ -48,3 +48,11 @@ def correct_flag(c in flag) {
 }
 
 ic { disjoint(flag, test) }
+
+// Game moves
+bound insert:test = Coord
+bound insert:flag = Coord
+
+// no cheating :P
+// ic { not count[insert:test] > 1 }
+// ic { not count[insert:flag] > 1 }

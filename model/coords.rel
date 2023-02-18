@@ -1,0 +1,83 @@
+// install
+
+// todo: floats
+
+// screen coords start in top left
+// they are row, col. 1-based
+value type ScreenCoord = Int, Int
+
+@inline def row[sc in ScreenCoord](v) = ^ScreenCoord[v,_](sc)
+@inline def col[sc in ScreenCoord](v) = ^ScreenCoord[_,v](sc)
+
+@inline def x = col
+@inline def y = row
+
+
+@inline def iseven(i in Int) { i%2=0 }
+@inline def isodd(i in Int) = not iseven(i)
+
+@inline
+module coord_conversion[
+          screen_center in Coord,
+          screen_width in Int,
+          screen_height in Int]
+
+    def screen_offset_x = screen_width ÷ 2
+    def screen_offset_y = screen_height ÷ 2
+
+    def odd_w = if isodd(screen_width) then 1 else 0 end
+    def odd_h = if isodd(screen_height) then 1 else 0 end
+
+    @inline
+    def gc[sc in ScreenCoord] =
+        ^Coord[xx, yy]
+        from xx, yy
+        where xx = sc.x + screen_center.x - screen_offset_x - odd_w
+          and yy = sc.y + screen_center.y - screen_offset_y - odd_h
+    def gc[c in Coord] = c
+
+    // This rad inverted definition should work, but fails due to:
+    // https://relationalai.atlassian.net/browse/RAI-10330
+    // def sc[c in Coord](v in ScreenCoord) = gc[v](c)
+
+    // So we manually define the inverse, here:
+    def sc[gc in Coord] =
+        ^ScreenCoord[yy, xx] // row,col - not x,y
+        from xx, yy
+        where xx = gc.x - screen_center.x + screen_offset_x + odd_w
+          and yy = gc.y - screen_center.y + screen_offset_y + odd_h
+    def sc[c in ScreenCoord] = c
+
+end
+
+
+
+// tests
+def CC50 = coord_conversion[^Coord[5,0], 8, 6]
+ic(c in CC50:gc[^ScreenCoord[1,1]]) { c = ^Coord[2, -2] }
+ic(c in CC50:gc[^ScreenCoord[3,4]]) { c = ^Coord[5, 0] }
+ic(c in CC50:sc[^Coord[2, -2]]) { c = ^ScreenCoord[1,1] }
+ic(c in CC50:sc[^Coord[5, 0]]) { c = ^ScreenCoord[3,4] }
+// off screen - should this be allowed?
+ic(c in CC50:gc[^ScreenCoord[3,14]]) { c = ^Coord[15, 0] }
+ic(c in CC50:sc[^Coord[15, 0]]) { c = ^ScreenCoord[3,14] }
+
+
+// odds round up
+// (7,5 is same as 8,6, not same as 6,4)
+def CC50_75 = coord_conversion[^Coord[5,0], 7, 5]
+ic(c in CC50_75:gc[^ScreenCoord[1,1]]) { c = ^Coord[2, -2] }
+ic(c in CC50_75:sc[^Coord[2, -2]]) { c = ^ScreenCoord[1,1] }
+
+def CC00 = coord_conversion[^Coord[0,0], 7, 4]
+ic(c in CC00:gc[^ScreenCoord[2,4]]) { c = ^Coord[0,0] }
+ic(c in CC00:sc[^Coord[0,0]]) { c = ^ScreenCoord[2,4] }
+
+
+def letter = char["ABCDEFGHIJKLMNOPQRSTUVWXYZ"][_]
+// Align the column names with a space: " A", ..., " Z", "AA", ...
+def colName[i in Int] = " %(sort[string[letter]][i])"
+def colName[i in Int] = {
+    sort[concat[letter, letter]][i-26]
+}
+
