@@ -1,23 +1,7 @@
 // install
 
-// //@function
-// bound screen_center = Coord
-// //@function
-// bound screen_width = Int
-// //@function
-// bound screen_height = Int
-
-//def coords = coord_conversion[screen_center, screen_width, screen_height]
-
-// There is currently a bug for this definition in the vectorized evaluator.
-// @og
-// def display_cell[row in view_r, col in view_c] {
-//     cell[c]
-//     from c, sc
-//     where sc = ^ScreenCoord[row, col]
-//       and c = coords:gc[sc]
-// }
 @inline
+@og
 def cell[c in Coord] = {
     if flag(c) then
         "!"
@@ -39,56 +23,10 @@ def display_cell[row in view_r, col in view_c] {
       and c.y = row
 }
 
+//def screen_height = 16
+//def screen_width = 16
 def view_r = range[1, screen_height, 1]
 def view_c = range[1, screen_width, 1]
 
 def victory { count[flag] = count[mine] }
 def game_over = exists(c : test(c) and mine(c))
-
-/* Text outputs, which are no longer used.
-
-def letter = char["ABCDEFGHIJKLMNOPQRSTUVWXYZ"][_]
-def colName[i in Int] = sort[string[letter]][i]
-def colName[i in Int] = {
-    sort[concat[letter, letter]][i-26]
-}
-
-def header {
-    """
-        %(string_join["", {c : "%(colName[c])", view_c(c)}])
-        %(string_join["", {c : "--", view_c(c)}])
-    """
-}
-def display_row = {r : string_join[' ', {
-        c :
-            display_cell[r, c]
-    }]
-}
-
-def display_grid {
-    concat[
-        header,
-        string_join['\n', {
-            i : concat["%(align[i]) | ", sort[display_row][i,_]]
-        }]
-    ]
-}
-def align[d] =
-    if 0 <= d < 10 then
-        " %d"
-    else
-        "%d"
-    end
-
-
-@outline def count0[R] = count[R] <++ 0
-def score = count0[correct_flag] - (count0[flag] - count0[correct_flag])
-
-def display = if game_over then
-        "Game Over\nScore: %score\n\n%display_grid"
-    else if victory then
-        "Victory!\nScore: %score\n\n%display_grid"
-    else
-        display_grid
-    end end
-*/

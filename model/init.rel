@@ -14,7 +14,8 @@ def delete:test = test, reset
 def delete:flag = flag, reset
 
 //def seed = random_uint64[]
-def seed = uint64[10]
+//def seed = uint64[10]
+def seed = 0x16502b85da56dbce
 
 // TODO: This might insert <40 mines due to duplicates
 def NUM_MINES = 40
