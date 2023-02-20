@@ -13,13 +13,16 @@ def delete:mine = mine, reset
 def delete:test = test, reset
 def delete:flag = flag, reset
 
+//def seed = random_uint64[]
+def seed = uint64[10]
+
 // TODO: This might insert <40 mines due to duplicates
 def NUM_MINES = 40
 def insert:mine = ^Coord[x,y], reset
     from i in range[1, NUM_MINES, 1], x, y
     where
-        x = float_int_convert[round[game_width  * random_threefry_float64[random_uint64[], i]]]
-    and y = float_int_convert[round[game_height * random_threefry_float64[uint64[1]+random_uint64[], i]]]
+        x = float_int_convert[round[game_width  * random_threefry_float64[seed, i]]]
+    and y = float_int_convert[round[game_height * random_threefry_float64[uint64[1]+seed, i]]]
 
 // Initialize the screen
 def insert:screen_center = ^Coord[0, 0], (reset or not ever_init)

@@ -80,7 +80,6 @@ route("/move_view_center") do
 end
 route("/reset_game") do
    @info "Reset Game"
-   @info "TODO: actual transaction"
    exec(ctx, database, engine, """
        def insert:reset = true
    """ , readonly=false)

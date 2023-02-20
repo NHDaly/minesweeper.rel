@@ -1,12 +1,23 @@
 // install
 
-//@function
-bound screen_center = Coord
-//@function
-bound screen_width = Int
-//@function
-bound screen_height = Int
+// //@function
+// bound screen_center = Coord
+// //@function
+// bound screen_width = Int
+// //@function
+// bound screen_height = Int
 
+//def coords = coord_conversion[screen_center, screen_width, screen_height]
+
+// There is currently a bug for this definition in the vectorized evaluator.
+// @og
+// def display_cell[row in view_r, col in view_c] {
+//     cell[c]
+//     from c, sc
+//     where sc = ^ScreenCoord[row, col]
+//       and c = coords:gc[sc]
+// }
+@inline
 def cell[c in Coord] = {
     if flag(c) then
         "!"
@@ -19,16 +30,6 @@ def cell[c in Coord] = {
     end end end
 }
 
-//def coords = coord_conversion[screen_center, screen_width, screen_height]
-
-// There is currently a bug for this definition in the vectorized evaluator.
-// @og
-// def display_cell[row in view_r, col in view_c] {
-//     cell[c]
-//     from c, sc
-//     where sc = ^ScreenCoord[row, col]
-//       and c = coords:gc[sc]
-// }
 @og
 def display_cell[row in view_r, col in view_c] {
     cell[c]
