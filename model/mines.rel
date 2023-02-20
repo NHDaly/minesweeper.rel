@@ -2,8 +2,8 @@
 
 value type Coord = Int,Int
 
-@inline def x[c in Coord](v) = ^Coord[v, _](c)
-@inline def y[c in Coord](v) = ^Coord[_, v](c)
+def x[c in Coord](v) = ^Coord[v, _](c)
+def y[c in Coord](v) = ^Coord[_, v](c)
 
 def game_width = 16
 def game_height = 16
@@ -15,14 +15,12 @@ def grid = ^Coord[
 
 bound mine = Coord
 
-@inline
 def neighbor[c in Coord] {
     ^Coord[x2, y2]
     from x2 in (c.x-1; c.x; c.x+1), y2 in (c.y-1; c.y; c.y+1)
     where not (x2 = c.x and y2 = c.y)
 }
 
-@inline
 def mine_count[c in Coord] {
     count[n in neighbor[c] : mine(n)]
 }

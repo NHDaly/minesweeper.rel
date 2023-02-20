@@ -6,7 +6,7 @@ include("ui.jl")
 
 function main()
     setup_database()
-    up()
+    up(port=8001)
 end
 
 end # module

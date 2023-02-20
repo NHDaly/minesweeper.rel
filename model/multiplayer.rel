@@ -7,9 +7,11 @@ entity type Player = String, String // username and password (not stored)
 bound Player = Entity
 bound player_username = Player, String
 
-bound cell_owner = Coord, Player
+// TODO: This isn't restricted to Players, since we also support anonymous players...?
+bound cell_owner = Coord, Entity
 
-def player_score[p in Player] = sum[{
+//def player_score[p in Player] = sum[{
+def player_score[p in Entity] = sum[{
     { f, 50 : correct_flag(f) and cell_owner[f] = p };
     { r, 1 : revealed(r) and cell_owner[r] = p };
     // (don't allow negative literals)

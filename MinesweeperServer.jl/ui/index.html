@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>CSS Grid starting point</title>
+    <title>Rel Minesweeper</title>
     <style>
         body {
             width: 90%;
@@ -20,26 +20,52 @@
             margin: 10px;
         }
 
-        .container > div {
+        .game-button {
             border-radius: 5px;
-            padding: 10px;
+            padding: 5px;
             background-color: rgb(207,232,220);
             border: 2px solid rgb(79,185,227);
+            margin: 5px;
+        }
+
+        .container > button {
+            border-radius: 3px;
+            background-color: #cfe8dc;
+            border: 2px solid #4fb9e3;
+            font-style: bold;
+        }
+        .container > button.revealed {
+            background-color: #bdd9cc;
+            border: 2px solid #4fb9e3;
+        }
+        .container > button.grayed {
+            background-color: #d6e3db;
+            border: 1px solid #b8d1db;
+            border-radius: 2px;
+            margin: 0px;
+        }
+        .container > button.flagged {
+            background-color: pink;
+            border: 2px solid rgb(181, 119, 130);
+        }
+        .container > button.mine {
+            background-color: #96aa9b;
+            border: 2px solid #445c66;
         }
 
         .container {
             display: grid;
-            grid-template-columns: repeat(17, 20px);
-            grid-template-rows: repeat(30, 20px);
-            gap: 2px;
+            grid-template-columns: repeat(16, 25px);
+            grid-template-rows: repeat(30, 25px);
+            gap: 1px;
         }
 
     </style>
 
     <script>
 
-    const NUM_ROWS = 17
-    const NUM_COLS = 17
+    const NUM_ROWS = 16
+    const NUM_COLS = 16
     window.addEventListener("load", function(){
         var G = document.getElementById('grid');
         for (var row = 0; row < NUM_ROWS; row++) {
@@ -50,15 +76,32 @@
 
         fetch(`/display`)
             .then((response) => response.json())
-            .then((data) => {
-                console.log('Got display data:', data)
-                for (var i = 0; i < data.length; i++) {
-                    let {row, col, cell} = data[i]
-                    c = get_cell(G, row, col)
-                    c.setHTML(cell)
-                }
-            });
+            .then((data) => update_display(data));
+
     })
+
+    function update_display(data) {
+        console.log('Got display data:', data)
+        var G = document.getElementById('grid');
+        for (var i = 0; i < data.length; i++) {
+            let {row, col, cell} = data[i]
+            // Rel is 1-based
+            c = get_cell(G, row-1, col-1)
+            c.setHTML(cell)
+            if (cell == '!') {
+                c.classList.add("flagged");
+            } else if (cell == ' ') {
+                c.classList.add("grayed");
+            } else if (cell == 'x') {
+                c.classList.add("mine");
+            } else if (cell == '.') {
+                // nothing
+                c.className = "";
+            } else {
+                c.classList.add("revealed");
+            }
+        }
+    };
 
     function get_cell(G, row, col) {
         return G.children[row * NUM_COLS + col]
@@ -78,9 +121,37 @@
         cell.onclick = function() {
             fetch(`/test_cell?row=${row}&col=${col}`)
                 .then((response) => response.json())
-                .then((data) => console.log(data));
+                .then((data) => update_display(data));
+        }
+        cell.oncontextmenu = function() {
+            if (cell.innerHTML == "!") {
+                fetch(`/flag_cell?row=${row}&col=${col}&delete=true`)
+                    .then((response) => response.json())
+                    .then((data) => update_display(data));
+            } else {
+                fetch(`/flag_cell?row=${row}&col=${col}`)
+                    .then((response) => response.json())
+                    .then((data) => update_display(data));
+            }
+            // Hide the normal context menu
+            return false;
         }
         return cell;
+    }
+
+    function recenter_view() {
+        fetch(`/move_view_center?x=0&y=0`)
+            .then((response) => response.json())
+            .then((data) => {
+                update_display(data);
+                document.getElementById('center_x').innerHTML = "0";
+                document.getElementById('center_y').innerHTML = "0";
+            });
+    }
+    function reset_game() {
+        fetch(`/reset_game`)
+            .then((response) => response.json())
+            .then((data) => update_display(data));
     }
     </script>
 
@@ -109,9 +180,16 @@
         Current Coordinates:
             <span id="center_x">0</span>,
             <span id="center_y">0</span>
+            <button class="game-button" id="center-button" onclick="recenter_view()">
+                Center View
+            </button>
+            <button class="game-button" id="reset-button" onclick="reset_game()">
+                Reset Game
+            </button>
     </div>
 
-    <div class="container" id="grid"></div>
+    <div class="container" id="grid">
+    </div>
 
 
 </body>
