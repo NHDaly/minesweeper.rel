@@ -1,7 +1,6 @@
 // install
 
-value type Coord = Int,Int
-
+value type Coord = Int,Int  // x,y
 def x[c in Coord](v) = ^Coord[v, _](c)
 def y[c in Coord](v) = ^Coord[_, v](c)
 
@@ -37,6 +36,7 @@ def revealed(c in Coord) {
     where
         revealed(r)
         and not exists(r.mine_count)
+        // TODO: make this ondemand
         and grid(c)
 }
 

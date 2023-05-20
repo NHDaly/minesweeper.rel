@@ -1,10 +1,10 @@
 // install
 
-// //@function
+// @function
 // bound screen_center = Coord
-// //@function
+// @function
 // bound screen_width = Int
-// //@function
+// @function
 // bound screen_height = Int
 
 //def coords = coord_conversion[screen_center, screen_width, screen_height]
@@ -17,47 +17,49 @@
 //     where sc = ^ScreenCoord[row, col]
 //       and c = coords:gc[sc]
 // }
-@inline
-@og
+// Split this out to make the if/else simpler in cell[].
+@ondemand
+def _cell[c in Coord] = {
+    flag(c), "!";
+    revealed(c), (string[mine_count[c]] <++ " ");
+    game_over and mine(c), "x";
+}
+@ondemand
 def cell[c in Coord] = {
-    if flag(c) then
-        "!"
-    else if revealed(c) then
-        string[mine_count[c]] <++ " "
-    else if game_over and mine(c) then
-        "x"
-    else
-        "."
-    end end end
+    _cell[c];
+    (not exists _cell[c]), ".";
 }
 
-@og
-def display_cell[row in view_r, col in view_c] {
+def display_cell[row, col] {
     cell[c]
-    from c where
-      grid(c)
-      and c.x = col
-      and c.y = row
+    from c in grid
+    where c.x = col and c.y = row
 }
 
 def view_r = range[1, screen_height, 1]
 def view_c = range[1, screen_width, 1]
 
-def victory { count[flag] = count[mine] }
+def victory { count[flag] = count[correct_flag] = count[mine] }
 def game_over = exists(c : test(c) and mine(c))
 
-/* Text outputs, which are no longer used.
+@outline def count0[R] = count[R] <++ 0
+def score = count0[correct_flag] - (count0[flag] - count0[correct_flag])
 
-def letter = char["ABCDEFGHIJKLMNOPQRSTUVWXYZ"][_]
-def colName[i in Int] = sort[string[letter]][i]
-def colName[i in Int] = {
-    sort[concat[letter, letter]][i-26]
-}
+// -------------------------------------------------------------------------------
+// -- Text outputs, which are not used for the actual game, only for debugging. --
 
-def header {
+def align[d in Int] =
+    if 0 <= d < 10 then
+        " %d"
+    else
+        "%d"
+    end
+
+def bottom_axis {
     """
-        %(string_join["", {c : "%(colName[c])", view_c(c)}])
+
         %(string_join["", {c : "--", view_c(c)}])
+        %(string_join["", {c : "%(align[c])", view_c(c)}])
     """
 }
 def display_row = {r : string_join[' ', {
@@ -68,22 +70,14 @@ def display_row = {r : string_join[' ', {
 
 def display_grid {
     concat[
-        header,
-        string_join['\n', {
-            i : concat["%(align[i]) | ", sort[display_row][i,_]]
-        }]
+        string_join['\n', { i : {
+            concat["%(align[r]) | ", display_row[r]]
+            // Put 1,1 on the bottom left, so invert the count
+            from r where r = game_height - i + 1
+        }}],
+        bottom_axis
     ]
 }
-def align[d] =
-    if 0 <= d < 10 then
-        " %d"
-    else
-        "%d"
-    end
-
-
-@outline def count0[R] = count[R] <++ 0
-def score = count0[correct_flag] - (count0[flag] - count0[correct_flag])
 
 def display = if game_over then
         "Game Over\nScore: %score\n\n%display_grid"
@@ -92,4 +86,3 @@ def display = if game_over then
     else
         display_grid
     end end
-*/

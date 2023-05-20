@@ -1,28 +1,29 @@
-// install
-
 // Initialization and reset logic
 bound ever_init = true
 def insert:ever_init = not ever_init
 def insert:reset = not ever_init
-def delete:reset = reset
 
-// (This is temporary to work around the FD-inference bug)
-// Reset is unfortunately a two-step process, to clear the test,flag at the bottom
 bound reset = true
-def delete:mine = mine, reset
-def delete:test = test, reset
-def delete:flag = flag, reset
+def delete:mine = mine, insert:reset
+def delete:test = test, insert:reset
+def delete:flag = flag, insert:reset
 
 //def seed = random_uint64[]
 def seed = uint64[10]
 
 // TODO: This might insert <40 mines due to duplicates
 def NUM_MINES = 40
-def insert:mine = ^Coord[x,y], reset
+def insert:mine = ^Coord[x,y], insert:reset
     from i in range[1, NUM_MINES, 1], x, y
     where
         x = float_int_convert[round[game_width  * random_threefry_float64[seed, i]]]
     and y = float_int_convert[round[game_height * random_threefry_float64[uint64[1]+seed, i]]]
+
+// (Temporary code to work around the FD-inference bug):
+// Initialize the EDBs to have more than 1 values
+def insert:test = (^Coord[-1,-1]; ^Coord[-2,2]), not ever_init
+def insert:flag = (^Coord[-3,-3]; ^Coord[-4,4]), not ever_init
+
 
 // Initialize the screen
 def insert:screen_center = ^Coord[0, 0], (reset or not ever_init)
@@ -32,9 +33,3 @@ def insert:screen_width = 16, not ever_init
 ic { exists(screen_center) implies count[screen_center] = 1 }
 ic { exists(screen_center) implies count[screen_width] = 1 }
 ic { exists(screen_center) implies count[screen_height] = 1 }
-
-
-// (Temporary code to work around the FD-inference bug):
-// Initialize the EDBs to have more than 1 values. (Use disjoint values)
-def insert:test = (^Coord[0,0]; ^Coord[10,10]), not ever_init
-def insert:flag = (^Coord[-1,-1]; ^Coord[-2,2]), not ever_init
