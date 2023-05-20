@@ -1,6 +1,6 @@
 using RAI
 
-ctx = Context(load_config(profile="flex"));
-engine = "nhd-m"
+ctx = Context(load_config());
+engine = "nhd-s"
 database = "nhd-minesweeper"
 
