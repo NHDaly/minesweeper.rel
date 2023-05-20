@@ -7,9 +7,9 @@ files = [
         "mines.rel",
         "init.rel",
         "display.rel",
-        #"coords.rel",
+        "coords.rel",
+        "actions.rel",
         #"multiplayer.rel",
-        #"actions.rel",
     ]
 ]
 
@@ -28,26 +28,24 @@ function setup_database()
     ))
 
     # Finish the initialization
-    exec(ctx, database, engine, "", readonly=false)
-    exec(ctx, database, engine, "", readonly=false)
+    exec(ctx, database, engine, "def insert:reset = true", readonly=false)
 
     exec(ctx, database, engine, """
-        def output = display_cell
+        def output = screen_grid
     """ , readonly=true)
 
     # Warm up some transactions
     exec(ctx, database, engine, """
-        def insert:test = ^Coord[-3, -1]
+        def insert:test = ^Coord[5, 5]
     """ , readonly=false)
     exec(ctx, database, engine, """
-        def output = display_cell
+        def output = screen_grid
     """ , readonly=true)
     exec(ctx, database, engine, """
-        def insert:test = ^Coord[5, 6]
+        def insert_test = 3, 3
     """ , readonly=false)
     exec(ctx, database, engine, """
         def insert:reset = true
     """ , readonly=false)
-    exec(ctx, database, engine, "", readonly=false)
 
 end

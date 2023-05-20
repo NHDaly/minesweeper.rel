@@ -43,6 +43,15 @@ def game_over = exists(c : test(c) and mine(c))
 def score = count0[correct_flag] - (count0[flag] - count0[correct_flag])
 
 // -------------------------------------------------------------------------------
+// -- Game display outputs ---------------------------------------------------------------
+
+def screen_grid = {
+    r in view_r :
+        c in view_c :
+            display_cell[r, c]
+}
+
+// -------------------------------------------------------------------------------
 // -- Text outputs, which are not used for the actual game, only for debugging. --
 
 def align[d in Int] =
