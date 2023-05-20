@@ -87,8 +87,12 @@
 
     })
 
-    function update_display(data) {
-        console.log('Got display data:', data)
+    function update_display(rsp) {
+        console.log('Got display data:', rsp)
+        var score = rsp.score
+        document.getElementById('score').innerHTML = score;
+
+        var data = rsp.grid
         var G = document.getElementById('grid');
         for (var i = 0; i < data.length; i++) {
             let {row, col, cell} = data[i]
@@ -192,6 +196,8 @@
             });
     }
     function reset_game() {
+        document.getElementById('center_x').innerHTML = "0";
+        document.getElementById('center_y').innerHTML = "0";
         fetch(`/reset_game`)
             .then((response) => response.json())
             .then((data) => update_display(data));
@@ -201,7 +207,7 @@
   </head>
 
 <body>
-    <h1>Simple grid example</h1>
+    <h1>Minesweeper Infinite!</h1>
 
     <div id="credentials">
         ... TODO: make this work...<br>
@@ -220,9 +226,12 @@
     </div>
 
     <div>
+        Score: <span id="score"></span>
+    </div>
+    <div>
         Current Coordinates:
-            <span id="center_x">0</span>,
-            <span id="center_y">0</span>
+            <span id="center_x"></span>,
+            <span id="center_y"></span>
             <button class="game-button" id="center-button" onclick="recenter_view()">
                 Center View
             </button>

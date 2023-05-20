@@ -14,10 +14,14 @@ make_json(data) = [
 
 function display_data(rsp)
    @info "Query output"
-   @assert length(rsp.results) == 1
-   table = rsp.results[1][2]
+   @assert length(rsp.results) == 2
+   score_idx = findfirst(x -> startswith(x[1], "/:output/:score/"), rsp.results)
+   grid_idx = 1 + (2 - score_idx) # (The other one)
+   table = rsp.results[grid_idx][2]
    data = zip(table[1], table[2], table[3])
-   return JSON3.write(make_json(data))
+
+   score = rsp.results[score_idx][2][1][1]
+   return JSON3.write(Dict("grid" => make_json(data), "score" => score))
 end
 
 route("/set_size") do
@@ -38,7 +42,8 @@ end
 route("/display") do
    @info "Running display query!"
     rsp = exec(ctx, database, engine, """
-        def output = screen_grid
+        def output:grid = screen_grid
+        def output:score = score
     """, readonly=true)
    return display_data(rsp)
 end
@@ -51,8 +56,9 @@ function do_insert(type, js_row, js_col; delete=false)
    operation = delete ? "delete" : "insert"
    @show operation
    query = """
-       def $(operation)_$type = $row, $col
-       def output:display = screen_grid
+      def $(operation)_$type = $row, $col
+      def output:grid = screen_grid
+      def output:score = score
    """
    @show query
    rsp = exec(ctx, database, engine, query, readonly=false)
@@ -86,7 +92,8 @@ route("/move_view_center") do
 
    rsp = exec(ctx, database, engine, """
       def move_screen_to = $newX, $newY
-      def output:display = screen_grid
+      def output:grid = screen_grid
+      def output:score = score
    """ , readonly=false)
 
    return display_data(rsp)
@@ -98,20 +105,19 @@ route("/move_view_center_to") do
 
    rsp = exec(ctx, database, engine, """
       def move_screen_to = $newX, $newY
-      def output:display = screen_grid
+      def output:grid = screen_grid
+      def output:score = score
    """ , readonly=false)
 
    return display_data(rsp)
 end
 route("/reset_game") do
    @info "Reset Game"
-   exec(ctx, database, engine, """
-       def insert:reset = true
+   rsp = exec(ctx, database, engine, """
+      def insert:reset = true
+      def output:grid = screen_grid
+      def output:score = score
    """ , readonly=false)
-   # DO I need this extra transaction? Or can they be combined?
-    rsp = exec(ctx, database, engine, """
-        def output = screen_grid
-    """, readonly=false)
    return display_data(rsp)
 end
 

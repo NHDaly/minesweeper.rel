@@ -19,6 +19,7 @@ bound mine = Coord
 // compute them all, and instead they must be _derived_ based on a function of the
 // coordinate. We use a hash function to do this.
 
+@ondemand
 def mine(c in Coord) {
     // The original game has 40 mines in a 16x16 grid, or 256 cells.
     // Rate of seeds: 40 / 256 = 15.625%, or 10 in 64
@@ -27,6 +28,7 @@ def mine(c in Coord) {
 
 // ----------------------------
 
+@ondemand
 def neighbor[c in Coord] {
     ^Coord[x2, y2]
     from x2 in (c.x-1; c.x; c.x+1), y2 in (c.y-1; c.y; c.y+1)
@@ -39,20 +41,30 @@ def mine_count[c in Coord] {
 
 bound test = Coord
 def correct_test(c in test) {
-    not mine(c)
+    // Workaround for ondemand in negation, see: https://relationalai.atlassian.net/browse/RAI-12881
+    not_mine(c)
 }
+// Workaround for ondemand in negation, see: https://relationalai.atlassian.net/browse/RAI-12881
+@ondemand def not_mine(c in Coord) = not mine(c)
 
+def exploded_mine(c in test) {
+    mine(c)
+}
+ic { disjoint(correct_test, exploded_mine) }
+
+// This should now be concrete! It will stop when it encounters enough mines.
 def revealed(c in Coord) = correct_test(c)
-@ondemand
 def revealed(c in Coord) {
     neighbor[r](c)
     from r
     where
         revealed(r)
-        and not exists(r.mine_count)
-        // // TODO: make this ondemand
-        // and grid(c)
+        // Workaround for ondemand in negation, see: https://relationalai.atlassian.net/browse/RAI-12881
+        and not_edge(r)
 }
+// Workaround for ondemand in negation, see: https://relationalai.atlassian.net/browse/RAI-12881
+@ondemand
+def not_edge(c in Coord) = not exists(c.mine_count)
 
 bound flag = Coord
 def correct_flag(c in flag) {

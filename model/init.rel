@@ -21,6 +21,7 @@ def insert:flag = (^Coord[3,3]; ^Coord[4,4]), not ever_init
 
 // Initialize the screen
 def insert:screen_center = ^Coord[0, 0], insert:reset
+def delete:screen_center = screen_center, insert:reset
 def insert:screen_height = 16, not ever_init
 def insert:screen_width = 16, not ever_init
 
