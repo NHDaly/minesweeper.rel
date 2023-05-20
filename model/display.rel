@@ -35,7 +35,8 @@ def cell[c in Coord] = {
 def view_r = range[1, screen_height, 1]
 def view_c = range[1, screen_width, 1]
 
-def victory { count[flag] = count[correct_flag] = count[mine] }
+// Victory isn't defined anymore in an infinite grid.
+// def victory { count[flag] = count[correct_flag] = count[mine] }
 def game_over = exists(c : test(c) and mine(c))
 
 @outline def count0[R] = count[R] <++ 0
@@ -76,8 +77,9 @@ def display_grid {
 
 def display = if game_over then
         "Game Over\nScore: %score\n\n%display_grid\n"
-    else if victory then
-        "Victory!\nScore: %score\n\n%display_grid\n"
+    // else if victory then
+    //     "Victory!\nScore: %score\n\n%display_grid\n"
     else
         "\n%display_grid\n"
-    end end
+    end
+    // end

@@ -8,3 +8,7 @@ def insert:test = coords:gc[^ScreenCoord[r, c]] from r,c where insert_test(r, c)
 
 bound insert_flag = Int, Int
 def insert:flag = coords:gc[^ScreenCoord[r, c]] from r,c where insert_flag(r, c)
+
+bound move_screen = Int, Int
+def insert:screen_center = ^Coord[screen_center.x + xx, screen_center.y + yy] from xx,yy where move_screen(xx, yy)
+def delete:screen_center = screen_center, exists(move_screen)

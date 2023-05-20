@@ -4,15 +4,28 @@ value type Coord = Int,Int  // x,y
 def x[c in Coord](v) = ^Coord[v, _](c)
 def y[c in Coord](v) = ^Coord[_, v](c)
 
-def game_width = 16
-def game_height = 16
+// def game_width = 16
+// def game_height = 16
 
-def grid = ^Coord[
-    range[1, game_width, 1],
-    range[1, game_height, 1]
-]
+// def grid = ^Coord[
+//     range[1, game_width, 1],
+//     range[1, game_height, 1]
+// ]
 
+// ----------------------------
 bound mine = Coord
+
+// Mines are placed randomly throughout the infinite grid. Since they're infinite, we can't
+// compute them all, and instead they must be _derived_ based on a function of the
+// coordinate. We use a hash function to do this.
+
+def mine(c in Coord) {
+    // The original game has 40 mines in a 16x16 grid, or 256 cells.
+    // Rate of seeds: 40 / 256 = 15.625%, or 10 in 64
+    murmurhash3f_with_seed[seed, c] % 64 < 10  // 15.625%
+}
+
+// ----------------------------
 
 def neighbor[c in Coord] {
     ^Coord[x2, y2]
@@ -30,14 +43,15 @@ def correct_test(c in test) {
 }
 
 def revealed(c in Coord) = correct_test(c)
+@ondemand
 def revealed(c in Coord) {
     neighbor[r](c)
     from r
     where
         revealed(r)
         and not exists(r.mine_count)
-        // TODO: make this ondemand
-        and grid(c)
+        // // TODO: make this ondemand
+        // and grid(c)
 }
 
 bound flag = Coord
