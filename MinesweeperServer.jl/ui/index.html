@@ -51,8 +51,8 @@
 
         .container {
             display: grid;
-            grid-template-columns: repeat(16, 25px);
-            grid-template-rows: repeat(30, 25px);
+            grid-template-columns: repeat(24, 25px);
+            grid-template-rows: repeat(16, 25px);
             gap: 1px;
         }
 
@@ -61,7 +61,7 @@
     <script>
 
     const NUM_ROWS = 16
-    const NUM_COLS = 16
+    const NUM_COLS = 24
     window.addEventListener("load", function(){
         var G = document.getElementById('grid');
         for (var row = 0; row < NUM_ROWS; row++) {
@@ -70,9 +70,20 @@
             }
         }
 
+        fetch(`/set_size?screen_width=${NUM_COLS}&screen_height=${NUM_ROWS}`)
+            .then((response) => response.json())
+            .then((data) => {
+                x = data.center_x;
+                y = data.center_y;
+                document.getElementById('center_x').innerHTML = x;
+                document.getElementById('center_y').innerHTML = y;
+            });
+
         fetch(`/display`)
             .then((response) => response.json())
             .then((data) => update_display(data));
+
+        document.onkeydown = handleKeyPress;
 
     })
 
@@ -85,16 +96,16 @@
             c = get_cell(G, row-1, col-1)
             c.setHTML(cell)
             if (cell == '!') {
-                c.classList.add("flagged");
+                c.className = "flagged";
             } else if (cell == ' ') {
-                c.classList.add("grayed");
+                c.className = "grayed";
             } else if (cell == 'x') {
-                c.classList.add("mine");
+                c.className = "mine";
             } else if (cell == '.') {
                 // nothing
                 c.className = "";
             } else {
-                c.classList.add("revealed");
+                c.className = "revealed";
             }
         }
     };
@@ -135,8 +146,44 @@
         return cell;
     }
 
+    function handleKeyPress(e) {
+        e = e || window.event;
+
+        var x = Number(document.getElementById('center_x').innerHTML);
+        var y = Number(document.getElementById('center_y').innerHTML);
+        if (e.keyCode == '38') {
+            // up arrow
+            y += -1;
+        }
+        else if (e.keyCode == '40') {
+            // down arrow
+            y += 1;
+        }
+        else if (e.keyCode == '37') {
+            // left arrow
+            x += -1;
+        }
+        else if (e.keyCode == '39') {
+            // right arrow
+            x += 1;
+        }
+        else {
+            return;
+        }
+
+        document.getElementById('center_x').innerHTML = x;
+        document.getElementById('center_y').innerHTML = y;
+
+        fetch(`/move_view_center_to?x=${x}&y=${y}`)
+            .then((response) => response.json())
+            .then((data) => {
+                update_display(data)
+            });
+    }
+
+
     function recenter_view() {
-        fetch(`/move_view_center?x=0&y=0`)
+        fetch(`/move_view_center_to?x=0&y=0`)
             .then((response) => response.json())
             .then((data) => {
                 update_display(data);
@@ -182,6 +229,9 @@
             <button class="game-button" id="reset-button" onclick="reset_game()">
                 Reset Game
             </button>
+    </div>
+    <div>
+        Arrow keys to move the screen.
     </div>
 
     <div class="container" id="grid">

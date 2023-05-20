@@ -20,10 +20,25 @@ function display_data(rsp)
    return JSON3.write(make_json(data))
 end
 
+route("/set_size") do
+   @info "Setting display size"
+   new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))
+   @show new_w, new_h
+    rsp = exec(ctx, database, engine, """
+        def insert:screen_width = $new_w
+        def delete:screen_width = screen_width
+        def insert:screen_height = $new_h
+        def delete:screen_height = screen_height
+        def output = screen_center.x, screen_center.y
+    """, readonly=false)
+   # Return the single tuple
+   x,y = collect(zip(rsp.results[1][2][1], rsp.results[1][2][2]))[1]
+   return JSON3.write(Dict("center_x" => x, "center_y" => y))
+end
 route("/display") do
    @info "Running display query!"
     rsp = exec(ctx, database, engine, """
-        def output = display_cell
+        def output = screen_grid
     """, readonly=true)
    return display_data(rsp)
 end
@@ -32,14 +47,12 @@ function do_insert(type, js_row, js_col; delete=false)
    @assert type in ("flag", "test")
    # JS is 1-based
    row, col = js_row + 1, js_col + 1
-   x,y = col, row
-   @show x,y
 
    operation = delete ? "delete" : "insert"
    @show operation
    query = """
-       def $operation:$type = ^Coord[$x, $y]
-       def output:display = display_cell
+       def $(operation)_$type = $row, $col
+       def output:display = screen_grid
    """
    @show query
    rsp = exec(ctx, database, engine, query, readonly=false)
@@ -48,7 +61,7 @@ function do_insert(type, js_row, js_col; delete=false)
    #     def current_user = ^Player["nhdaly", "this is my password"]
    #     def insert:test = coords:gc[^ScreenCoord[$row, $col]]
    #     def output:score = player_score
-   #     def output:display = display_cell
+   #     def output:display = screen_grid
    # """ , readonly=false)
    return rsp
 
@@ -71,12 +84,24 @@ route("/move_view_center") do
    newX, newY = parse.(Int, (params(:x), params(:y)))
    @show newX, newY
 
-   @info "TODO: actual transaction"
-   # exec(ctx, database, engine, """
-   #     def insert:screen_center = coords:gc[^ScreenCoord[$newX, $newY]]
-   # """ , readonly=false)
+   rsp = exec(ctx, database, engine, """
+      def move_screen_to = $newX, $newY
+      def output:display = screen_grid
+   """ , readonly=false)
 
-   return JSON3.write(fake_data())
+   return display_data(rsp)
+end
+route("/move_view_center_to") do
+   @info "Move View"
+   newX, newY = parse.(Int, (params(:x), params(:y)))
+   @show newX, newY
+
+   rsp = exec(ctx, database, engine, """
+      def move_screen_to = $newX, $newY
+      def output:display = screen_grid
+   """ , readonly=false)
+
+   return display_data(rsp)
 end
 route("/reset_game") do
    @info "Reset Game"
@@ -85,7 +110,7 @@ route("/reset_game") do
    """ , readonly=false)
    # DO I need this extra transaction? Or can they be combined?
     rsp = exec(ctx, database, engine, """
-        def output = display_cell
+        def output = screen_grid
     """, readonly=false)
    return display_data(rsp)
 end
