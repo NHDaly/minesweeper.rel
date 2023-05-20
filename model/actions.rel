@@ -6,5 +6,5 @@
 bound insert_test = Int, Int
 def insert:test = coords:gc[^ScreenCoord[r, c]] from r,c where insert_test(r, c)
 
-bound insert_flag = ScreenCoord
+bound insert_flag = Int, Int
 def insert:flag = coords:gc[^ScreenCoord[r, c]] from r,c where insert_flag(r, c)

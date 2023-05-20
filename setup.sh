@@ -22,7 +22,8 @@ rai exec "$DATABASE" -e "$ENGINE" -c '2+2+2'
 # Load the models from the position of this file
 (
     cd $(dirname "$0");
-    rai load-models "$DATABASE" -e "$ENGINE" ./model/mines.rel ./model/display.rel ./model/init.rel
+    rai load-models "$DATABASE" -e "$ENGINE" ./model/mines.rel ./model/display.rel \
+            ./model/init.rel ./model/coords.rel ./model/actions.rel
 )
 
 # Workaround for FD bug: Clear out the inserted tests and flags

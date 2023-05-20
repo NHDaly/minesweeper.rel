@@ -6,17 +6,17 @@
 // they are row, col. 1-based
 value type ScreenCoord = Int, Int
 
-@inline def row[sc in ScreenCoord](v) = ^ScreenCoord[v,_](sc)
-@inline def col[sc in ScreenCoord](v) = ^ScreenCoord[_,v](sc)
+def row[sc in ScreenCoord](v) = ^ScreenCoord[v,_](sc)
+def col[sc in ScreenCoord](v) = ^ScreenCoord[_,v](sc)
 
-@inline def x = col
-@inline def y = row
+def x = col
+def y = row
 
 
-@inline def iseven(i in Int) { i%2=0 }
-@inline def isodd(i in Int) = not iseven(i)
+def iseven(i in Int) { i%2=0 }
+def isodd(i in Int) = not iseven(i)
 
-@inline
+@ondemand
 module coord_conversion[
           screen_center in Coord,
           screen_width in Int,
@@ -28,7 +28,6 @@ module coord_conversion[
     def odd_w = if isodd(screen_width) then 1 else 0 end
     def odd_h = if isodd(screen_height) then 1 else 0 end
 
-    @inline
     def gc[sc in ScreenCoord] =
         ^Coord[xx, yy]
         from xx, yy

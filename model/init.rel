@@ -21,12 +21,12 @@ def insert:mine = ^Coord[x,y], insert:reset
 
 // (Temporary code to work around the FD-inference bug):
 // Initialize the EDBs to have more than 1 values
-def insert:test = (^Coord[-1,-1]; ^Coord[-2,2]), not ever_init
-def insert:flag = (^Coord[-3,-3]; ^Coord[-4,4]), not ever_init
+def insert:test = (^Coord[1,1]; ^Coord[2,2]), not ever_init
+def insert:flag = (^Coord[3,3]; ^Coord[4,4]), not ever_init
 
 
 // Initialize the screen
-def insert:screen_center = ^Coord[0, 0], (reset or not ever_init)
+def insert:screen_center = ^Coord[0, 0], insert:reset
 def insert:screen_height = 16, not ever_init
 def insert:screen_width = 16, not ever_init
 
