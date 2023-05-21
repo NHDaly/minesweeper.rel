@@ -60,45 +60,138 @@
 
     <script>
 
-    const NUM_ROWS = 16
-    const NUM_COLS = 24
+    // This is much larger than the what we display, to allow for fast scrolling
+    const NUM_ROWS = 160
+    const NUM_COLS = 240
+
+    var grid_center_row = 0
+    var grid_center_col = 0
+    var g_data = new Array(NUM_ROWS * NUM_COLS);
+
+    function gridDimensions() {
+        const gridComputedStyle = window.getComputedStyle(grid);
+        // get number of grid rows
+        const gridRowCount = gridComputedStyle.getPropertyValue("grid-template-rows").split(" ").length;
+        // get number of grid columns
+        const gridColumnCount = gridComputedStyle.getPropertyValue("grid-template-columns").split(" ").length;
+
+        return [gridRowCount, gridColumnCount];
+    }
+
     window.addEventListener("load", function(){
         var G = document.getElementById('grid');
-        for (var row = 0; row < NUM_ROWS; row++) {
-            for (var col = 0; col < NUM_COLS; col++) {
+
+        // Set up visual display grid
+        var [rows, cols] = gridDimensions();
+        for (var row = 0; row < rows; row++) {
+            for (var col = 0; col < cols; col++) {
                 G.appendChild(make_cell(row, col));
             }
         }
 
-        fetch(`/set_size?screen_width=${NUM_COLS}&screen_height=${NUM_ROWS}`)
-            .then((response) => response.json())
-            .then((data) => {
-                x = data.center_x;
-                y = data.center_y;
-                document.getElementById('center_x').innerHTML = x;
-                document.getElementById('center_y').innerHTML = y;
-            });
-
-        fetch(`/display`)
-            .then((response) => response.json())
-            .then((data) => update_display(data));
+        // Load the grid data from the server
+        get_display();
 
         document.onkeydown = handleKeyPress;
 
     })
 
-    function update_display(rsp) {
+    function get_display() {
+        pending_request = true;
+        var x = Number(document.getElementById('center_x').innerHTML);
+        var y = Number(document.getElementById('center_y').innerHTML);
+
+        fetch(`/display?center_x=${x}&center_y=${y}&screen_width=${NUM_COLS}&screen_height=${NUM_ROWS}`)
+            .then((response) => response.json())
+            .then((data) => {
+                update_grid(data)
+            });
+    }
+
+    function update_grid(rsp) {
         console.log('Got display data:', rsp)
+        pending_request = false;
         var score = rsp.score
         document.getElementById('score').innerHTML = score;
 
+        // Update client-side grid data
         var data = rsp.grid
-        var G = document.getElementById('grid');
         for (var i = 0; i < data.length; i++) {
             let {row, col, cell} = data[i]
             // Rel is 1-based
-            c = get_cell(G, row-1, col-1)
+            row -= 1
+            col -= 1
+            // console.log("grid data", row, col, cell)
+            idx = row * NUM_COLS + col
+            g_data[idx] = cell
+            // console.log(`g_data[${idx}] = `, g_data[idx])
+        }
+
+        // Put the view to the middle of the data grid
+        grid_center_row = Math.floor(NUM_ROWS / 2)
+        grid_center_col = Math.floor(NUM_COLS / 2)
+
+        // Update display grid
+        refresh_display()
+    }
+
+    function grid_coord(row, col) {
+        // console.log("display:", row, col);
+        // Start by figuring out where the screen center currently is, relative
+        // to the game grid.
+        center_row = grid_center_row
+        center_col = grid_center_col
+        // console.log("Screen center:", center_row, center_col);
+        var [rows, cols] = gridDimensions();
+        // Start from the top-left of the _screen_, which is the screen center
+        // minus half the screen size
+        var screen_row = center_row - Math.floor(rows / 2);
+        var screen_col = center_col - Math.floor(cols / 2);
+        // console.log("Screen top-left:", screen_row, screen_col);
+
+        // Now add the row and column offsets
+        var g_row = screen_row + row
+        var g_col = screen_col + col
+        // console.log("Game cell:", g_row, g_col);
+
+        return [g_row, g_col]
+    }
+
+    function server_coord(row, col) {
+        var x = Number(document.getElementById('center_x').innerHTML);
+        var y = Number(document.getElementById('center_y').innerHTML);
+
+        var [rows, cols] = gridDimensions();
+
+        var grid_top_left_x = x - Math.floor(cols / 2)
+        var grid_top_left_y = y - Math.floor(rows / 2)
+        var server_x = grid_top_left_x + col
+        var server_y = grid_top_left_y + row
+
+        // Julia is 1-based
+        server_x += 1
+        server_y += 1
+
+        return [server_x, server_y]
+    }
+
+    function refresh_display() {
+        var G = document.getElementById('grid');
+        var [rows, cols] = gridDimensions();
+
+        for (var i = 0; i < rows * cols; i++) {
+            row = Math.floor(i / cols)
+            col = i % cols
+            c = get_cell(G, row, col)
+            // console.log("Screen cell:", row, col);
+
+            var [g_row, g_col] = grid_coord(row, col);
+            // console.log("Game cell:", g_row, g_col);
+            idx = g_row * NUM_COLS + g_col
+            cell = g_data[idx]
+
             c.setHTML(cell)
+
             if (cell == '!') {
                 c.className = "flagged";
             } else if (cell == ' ') {
@@ -115,7 +208,8 @@
     };
 
     function get_cell(G, row, col) {
-        return G.children[row * NUM_COLS + col]
+        var [_, num_cols] = gridDimensions();
+        return G.children[row * num_cols + col]
     }
 
     //function make_cell(row, col) {
@@ -127,22 +221,32 @@
     //    cell.appendChild(button)
     //    return cell;
     //}
-    function make_cell(row, col) {
+    function make_cell(screen_row, screen_col) {
         let cell = document.createElement("button")
         cell.onclick = function() {
-            fetch(`/test_cell?row=${row}&col=${col}`)
+            var screen_x = Number(document.getElementById('center_x').innerHTML);
+            var screen_y = Number(document.getElementById('center_y').innerHTML);
+            console.log("----------------------------CLICKED---------------------")
+            console.log("screen:", screen_row, screen_col);
+            var [x, y] = server_coord(screen_row, screen_col)
+            console.log("server:", x, y)
+
+            fetch(`/test_cell?x=${x}&y=${y}&screen_width=${NUM_COLS}&screen_height=${NUM_ROWS}&center_x=${screen_x}&center_y=${screen_y}`)
                 .then((response) => response.json())
-                .then((data) => update_display(data));
+                .then((data) => update_grid(data));
         }
         cell.oncontextmenu = function() {
+            var screen_x = Number(document.getElementById('center_x').innerHTML);
+            var screen_y = Number(document.getElementById('center_y').innerHTML);
+            var [x, y] = server_coord(screen_row, screen_col)
             if (cell.innerHTML == "!") {
-                fetch(`/flag_cell?row=${row}&col=${col}&delete=true`)
+                fetch(`/flag_cell?x=${x}&y=${y}&delete=true&screen_width=${NUM_COLS}&screen_height=${NUM_ROWS}&center_x=${screen_x}&center_y=${screen_y}`)
                     .then((response) => response.json())
-                    .then((data) => update_display(data));
+                    .then((data) => update_grid(data));
             } else {
-                fetch(`/flag_cell?row=${row}&col=${col}`)
+                fetch(`/flag_cell?x=${x}&y=${y}&screen_width=${NUM_COLS}&screen_height=${NUM_ROWS}&center_x=${screen_x}&center_y=${screen_y}`)
                     .then((response) => response.json())
-                    .then((data) => update_display(data));
+                    .then((data) => update_grid(data));
             }
             // Hide the normal context menu
             return false;
@@ -155,52 +259,70 @@
 
         var x = Number(document.getElementById('center_x').innerHTML);
         var y = Number(document.getElementById('center_y').innerHTML);
+        var shift_x = shift_y = 0;
         if (e.keyCode == '38') {
             // up arrow
-            y += -1;
+            shift_y = -1;
         }
         else if (e.keyCode == '40') {
             // down arrow
-            y += 1;
+            shift_y = 1;
         }
         else if (e.keyCode == '37') {
             // left arrow
-            x += -1;
+            shift_x = -1;
         }
         else if (e.keyCode == '39') {
             // right arrow
-            x += 1;
+            shift_x = 1;
         }
         else {
             return;
         }
 
+        x += shift_x;
+        y += shift_y;
+
+        console.log("Shift:", shift_x, shift_y);
+
         document.getElementById('center_x').innerHTML = x;
         document.getElementById('center_y').innerHTML = y;
 
-        fetch(`/move_view_center_to?x=${x}&y=${y}`)
-            .then((response) => response.json())
-            .then((data) => {
-                update_display(data)
-            });
+        grid_center_col += shift_x;
+        grid_center_row += shift_y;
+
+        // update the grid now that we've shifted
+        refresh_display()
+
+        // Attempt to re-request the grid if we're near the edge
+        if (pending_request) {
+            return;
+        }
+
+        var seen_ratio = grid_center_col / NUM_COLS
+        if (seen_ratio < 0.25 || seen_ratio > 0.75) {
+            get_display();
+        }
+        seen_ratio = grid_center_row / NUM_ROWS
+        if (seen_ratio < 0.25 || seen_ratio > 0.75) {
+            get_display();
+        }
     }
+    var pending_request = false;
 
+    function recenter_view(x, y) {
+        // server side coordinates
+        document.getElementById('center_x').innerHTML = x;
+        document.getElementById('center_y').innerHTML = y;
 
-    function recenter_view() {
-        fetch(`/move_view_center_to?x=0&y=0`)
-            .then((response) => response.json())
-            .then((data) => {
-                update_display(data);
-                document.getElementById('center_x').innerHTML = "0";
-                document.getElementById('center_y').innerHTML = "0";
-            });
+        get_display();
     }
     function reset_game() {
         document.getElementById('center_x').innerHTML = "0";
         document.getElementById('center_y').innerHTML = "0";
         fetch(`/reset_game`)
             .then((response) => response.json())
-            .then((data) => update_display(data));
+            .then((data) => update_grid(data));
     }
     </script>
 
@@ -230,9 +352,9 @@
     </div>
     <div>
         Current Coordinates:
-            <span id="center_x"></span>,
-            <span id="center_y"></span>
-            <button class="game-button" id="center-button" onclick="recenter_view()">
+            <span id="center_x">0</span>,
+            <span id="center_y">0</span>
+            <button class="game-button" id="center-button" onclick="recenter_view(0,0)">
                 Center View
             </button>
             <button class="game-button" id="reset-button" onclick="reset_game()">

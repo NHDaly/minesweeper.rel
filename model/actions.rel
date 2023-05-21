@@ -3,6 +3,10 @@
 // Install these actions so that we can precompile the large, inlined coordinate
 // conversion definitions. This way, they'll be compiled once, and cached, and the
 // Only thing that will flow through them is new data.
+
+// The client keeps track of the screen center and the screen size, and they
+// set it while calling these updates.
+
 bound insert_test = Int, Int
 def insert:test = coords:gc[^ScreenCoord[r, c]] from r,c where insert_test(r, c)
 
@@ -10,11 +14,3 @@ bound insert_flag = Int, Int
 def insert:flag = coords:gc[^ScreenCoord[r, c]] from r,c where insert_flag(r, c)
 bound delete_flag = Int, Int
 def delete:flag = coords:gc[^ScreenCoord[r, c]] from r,c where delete_flag(r, c)
-
-bound move_screen = Int, Int
-def insert:screen_center = ^Coord[screen_center.x + xx, screen_center.y + yy] from xx,yy where move_screen(xx, yy)
-def delete:screen_center = screen_center, exists(move_screen)
-
-bound move_screen_to = Int, Int
-def insert:screen_center = ^Coord[x, y] from x,y where move_screen_to(x, y)
-def delete:screen_center = screen_center, exists(move_screen_to)

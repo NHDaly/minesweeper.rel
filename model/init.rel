@@ -19,12 +19,6 @@ def insert:test = (^Coord[1,1]; ^Coord[2,2]), not ever_init
 def insert:flag = (^Coord[3,3]; ^Coord[4,4]), not ever_init
 
 
-// Initialize the screen
-def insert:screen_center = ^Coord[0, 0], insert:reset
-def delete:screen_center = screen_center, insert:reset
-def insert:screen_height = 16, not ever_init
-def insert:screen_width = 16, not ever_init
-
 ic { exists(screen_center) implies count[screen_center] = 1 }
 ic { exists(screen_center) implies count[screen_width] = 1 }
 ic { exists(screen_center) implies count[screen_height] = 1 }

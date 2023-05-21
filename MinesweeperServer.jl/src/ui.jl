@@ -24,39 +24,39 @@ function display_data(rsp)
    return JSON3.write(Dict("grid" => make_json(data), "score" => score))
 end
 
-route("/set_size") do
-   @info "Setting display size"
-   new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))
-   @show new_w, new_h
-    rsp = exec(ctx, database, engine, """
-        def insert:screen_width = $new_w
-        def delete:screen_width = screen_width
-        def insert:screen_height = $new_h
-        def delete:screen_height = screen_height
-        def output = screen_center.x, screen_center.y
-    """, readonly=false)
-   # Return the single tuple
-   x,y = collect(zip(rsp.results[1][2][1], rsp.results[1][2][2]))[1]
-   return JSON3.write(Dict("center_x" => x, "center_y" => y))
-end
 route("/display") do
    @info "Running display query!"
-    rsp = exec(ctx, database, engine, """
-        def output:grid = screen_grid
-        def output:score = score
-    """, readonly=true)
+   new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))
+   x, y = parse.(Int, (params(:center_x), params(:center_y)))
+   @show new_w, new_h
+   @show x, y
+
+   rsp = exec(ctx, database, engine, """
+      def screen_width = $new_w
+      def screen_height = $new_h
+      def screen_center = ^Coord[$x, $y]
+
+      def output:grid = screen_grid
+      def output:score = score
+   """, readonly=true)
    return display_data(rsp)
 end
 
-function do_insert(type, js_row, js_col; delete=false)
+function do_insert(type, x, y; delete=false)
    @assert type in ("flag", "test")
-   # JS is 1-based
-   row, col = js_row + 1, js_col + 1
+
+   new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))
+   screen_x, screen_y = parse.(Int, (params(:center_x), params(:center_y)))
 
    operation = delete ? "delete" : "insert"
    @show operation
    query = """
-      def $(operation)_$type = $row, $col
+      def $(operation):$type = ^Coord[$x, $y]
+
+      def screen_width = $new_w
+      def screen_height = $new_h
+      def screen_center = ^Coord[$screen_x, $screen_y]
+
       def output:grid = screen_grid
       def output:score = score
    """
@@ -74,49 +74,21 @@ function do_insert(type, js_row, js_col; delete=false)
 end
 route("/test_cell") do
    @info "Test Cell"
-   row, col = parse.(Int, (params(:row), params(:col)))
-   rsp = do_insert("test", row, col)
+   x, y = parse.(Int, (params(:x), params(:y)))
+   rsp = do_insert("test", x, y)
    return display_data(rsp)
 end
 route("/flag_cell") do
    @info "Flag Cell"
-   row, col = parse.(Int, (params(:row), params(:col)))
+   x, y = parse.(Int, (params(:x), params(:y)))
    delete = parse(Bool, params(:delete, "false"))
-   rsp = do_insert("flag", row, col, delete=delete)
-   return display_data(rsp)
-end
-route("/move_view_center") do
-   @info "Move View"
-   newX, newY = parse.(Int, (params(:x), params(:y)))
-   @show newX, newY
-
-   rsp = exec(ctx, database, engine, """
-      def move_screen_to = $newX, $newY
-      def output:grid = screen_grid
-      def output:score = score
-   """ , readonly=false)
-
-   return display_data(rsp)
-end
-route("/move_view_center_to") do
-   @info "Move View"
-   newX, newY = parse.(Int, (params(:x), params(:y)))
-   @show newX, newY
-
-   rsp = exec(ctx, database, engine, """
-      def move_screen_to = $newX, $newY
-      def output:grid = screen_grid
-      def output:score = score
-   """ , readonly=false)
-
+   rsp = do_insert("flag", x, y, delete=delete)
    return display_data(rsp)
 end
 route("/reset_game") do
    @info "Reset Game"
    rsp = exec(ctx, database, engine, """
       def insert:reset = true
-      def output:grid = screen_grid
-      def output:score = score
    """ , readonly=false)
    return display_data(rsp)
 end
