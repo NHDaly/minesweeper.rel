@@ -8,7 +8,7 @@ route("/") do
 end
 fake_data() = make_json([(rand(0:15),rand(0:15),rand([" ", ".", "1", "2", "!"])) for _ in 1:10])
 make_json(data) = [
-   (;row = r, col = c, cell = v)
+   v
    for (r,c,v) in data
 ]
 
@@ -87,10 +87,10 @@ route("/flag_cell") do
 end
 route("/reset_game") do
    @info "Reset Game"
-   rsp = exec(ctx, database, engine, """
+   exec(ctx, database, engine, """
       def insert:reset = true
    """ , readonly=false)
-   return display_data(rsp)
+   return
 end
 
 

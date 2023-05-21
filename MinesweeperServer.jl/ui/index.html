@@ -94,9 +94,17 @@
 
         document.onkeydown = handleKeyPress;
 
+        // Refresh the data every 5 seconds
+        const interval = setInterval(function() {
+            get_display();
+        }, 10000);
     })
 
     function get_display() {
+        if (pending_request) {
+            console.log("Skipping request, already pending");
+            return;
+        }
         pending_request = true;
         var x = Number(document.getElementById('center_x').innerHTML);
         var y = Number(document.getElementById('center_y').innerHTML);
@@ -117,13 +125,12 @@
         // Update client-side grid data
         var data = rsp.grid
         for (var i = 0; i < data.length; i++) {
-            let {row, col, cell} = data[i]
-            // Rel is 1-based
-            row -= 1
-            col -= 1
+            // compute row/col from i
+            var row = Math.floor(i / NUM_COLS)
+            var col = i % NUM_COLS
+            let cell = data[i]
             // console.log("grid data", row, col, cell)
-            idx = row * NUM_COLS + col
-            g_data[idx] = cell
+            g_data[i] = cell
             // console.log(`g_data[${idx}] = `, g_data[idx])
         }
 
@@ -190,7 +197,7 @@
             idx = g_row * NUM_COLS + g_col
             cell = g_data[idx]
 
-            c.setHTML(cell)
+            c.innerHTML = cell
 
             if (cell == '!') {
                 c.className = "flagged";
@@ -320,9 +327,7 @@
     function reset_game() {
         document.getElementById('center_x').innerHTML = "0";
         document.getElementById('center_y').innerHTML = "0";
-        fetch(`/reset_game`)
-            .then((response) => response.json())
-            .then((data) => update_grid(data));
+        fetch(`/reset_game`);
     }
     </script>
 
