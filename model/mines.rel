@@ -41,11 +41,8 @@ def mine_count[c in Coord] {
 
 bound test = Coord
 def correct_test(c in test) {
-    // Workaround for ondemand in negation, see: https://relationalai.atlassian.net/browse/RAI-12881
-    not_mine(c)
+    not mine(c)
 }
-// Workaround for ondemand in negation, see: https://relationalai.atlassian.net/browse/RAI-12881
-@ondemand def not_mine(c in Coord) = not mine(c)
 
 def exploded_mine(c in test) {
     mine(c)
@@ -59,12 +56,8 @@ def revealed(c in Coord) {
     from r
     where
         revealed(r)
-        // Workaround for ondemand in negation, see: https://relationalai.atlassian.net/browse/RAI-12881
-        and not_edge(r)
+        and not exists(r.mine_count)
 }
-// Workaround for ondemand in negation, see: https://relationalai.atlassian.net/browse/RAI-12881
-@ondemand
-def not_edge(c in Coord) = not exists(c.mine_count)
 
 bound flag = Coord
 def correct_flag(c in flag) {
