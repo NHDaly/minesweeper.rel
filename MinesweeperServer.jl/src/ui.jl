@@ -8,16 +8,30 @@ route("/") do
 end
 fake_data() = make_json([(rand(0:15),rand(0:15),rand([" ", ".", "1", "2", "!"])) for _ in 1:10])
 make_json(data) = join((v for (r,c,v) in data))
+function print_grid(data, w, h, x, y)
+   foreach(println, ("$(lpad(r-(h÷2 - y),2)) " * join((v for c in 1:w for v in data[r,c]), " ") for r in 1:h))
+   print("  ")
+   for c in 1:w
+      print("$(lpad(c-(w÷2 - x),2))")
+   end
+   println()
+end
 
-function display_data(rsp)
+function display_data(rsp, w, h, cx, cy)
    @info "Query output"
-   @assert length(rsp.results) == 2
+   @assert length(rsp.results) >= 2
+   if length(rsp.results) > 2
+      @warn first.(rsp.results)
+   end
    score_idx = findfirst(x -> startswith(x[1], "/:output/:score/"), rsp.results)
    grid_idx = 1 + (2 - score_idx) # (The other one)
    table = rsp.results[grid_idx][2]
    data = zip(table[1], table[2], table[3])
 
    score = rsp.results[score_idx][2][1][1]
+   global DATA = data
+   print_grid(Dict(((i,j) => v) for (i,j,v) in data), w, h, cx, cy)
+   println("Score: ", score)
    return JSON3.write(Dict("grid" => make_json(data), "score" => score))
 end
 
@@ -28,11 +42,14 @@ function handle_display(new_w, new_h, x, y)
       def insert[:screen_width]: { $new_w }
       def insert[:screen_height]: { $new_h }
       def insert[:screen_center]: { ^Coord[$x, $y] }
+      def delete[:screen_width]: { screen_width }
+      def delete[:screen_height]: { screen_height }
+      def delete[:screen_center]: { screen_center }
 
       def output[:grid]: screen_grid
       def output[:score]: score
    """, readonly=true)
-   return display_data(rsp)
+   return display_data(rsp, new_w, new_h, x, y)
 end
 route("/display") do
    new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))
@@ -42,20 +59,20 @@ route("/display") do
    handle_display(new_w, new_h, x, y)
 end
 
-function do_insert(type, x, y; delete=false)
+function do_insert(type, x, y; delete=false, new_w=10, new_h=10, screen_x=0, screen_y=0)
    @assert type in ("flag", "test")
-
-   new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))
-   screen_x, screen_y = parse.(Int, (params(:center_x), params(:center_y)))
 
    operation = delete ? "delete" : "insert"
    @show operation
    query = """
-      def $(operation)[:$type] { ^Coord[$x, $y] }
+      def $(operation)[:$type]: { ^Coord[$x, $y] }
 
       def insert[:screen_width]: { $new_w }
       def insert[:screen_height]: { $new_h }
-      def insert[:screen_center]: { ^Coord[$x, $y] }
+      def insert[:screen_center]: { ^Coord[$screen_x, $screen_y] }
+      def delete[:screen_width]: { screen_width }
+      def delete[:screen_height]: { screen_height }
+      def delete[:screen_center]: { screen_center }
 
       def output[:grid]: screen_grid
       def output[:score]: score
@@ -69,12 +86,15 @@ function do_insert(type, x, y; delete=false)
    #     def output:score = player_score
    #     def output:display = screen_grid
    # """ , readonly=false)
-   return rsp
+   return display_data(rsp, new_w, new_h, screen_x, screen_y)
 
 end
 route("/test_cell") do
    @info "Test Cell"
    x, y = parse.(Int, (params(:x), params(:y)))
+   new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))
+   screen_x, screen_y = parse.(Int, (params(:center_x), params(:center_y)))
+
    rsp = do_insert("test", x, y)
    return display_data(rsp)
 end
