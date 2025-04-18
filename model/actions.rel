@@ -1,16 +1,16 @@
-// install
+// // install
 
-// Install these actions so that we can precompile the large, inlined coordinate
-// conversion definitions. This way, they'll be compiled once, and cached, and the
-// Only thing that will flow through them is new data.
+// // Install these actions so that we can precompile the large, inlined coordinate
+// // conversion definitions. This way, they'll be compiled once, and cached, and the
+// // Only thing that will flow through them is new data.
 
-// The client keeps track of the screen center and the screen size, and they
-// set it while calling these updates.
+// // The client keeps track of the screen center and the screen size, and they
+// // set it while calling these updates.
 
-declare insert_test(trail...) requires {(Int, Int)}(trail...)
-def insert(:test, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where insert_test(r, c)})
+// declare insert_test(trail...) requires {(Int, Int)}(trail...)
+// def insert(:test, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where insert_test(r, c)})
 
-declare insert_flag(trail...) requires {(Int, Int)}(trail...)
-def insert(:flag, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where insert_flag(r, c)})
-declare delete_flag(trail...) requires {(Int, Int)}(trail...)
-def delete(:flag, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where delete_flag(r, c)})
+// declare insert_flag(trail...) requires {(Int, Int)}(trail...)
+// def insert(:flag, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where insert_flag(r, c)})
+// declare delete_flag(trail...) requires {(Int, Int)}(trail...)
+// def delete(:flag, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where delete_flag(r, c)})

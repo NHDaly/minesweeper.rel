@@ -1,3 +1,5 @@
+// This file is now unused, since it's too slow. We do this client-side now. :(
+/*
 
 // install
 
@@ -50,20 +52,6 @@ def cell[x, y]: {
 
 def view_r { range[1, screen_height, 1] }
 def view_c { range[1, screen_width, 1] }
-
-// Victory and game_over aren't defined anymore in an infinite grid.
-// def victory { count[flag] = count[correct_flag] = count[mine] }
-// def game_over = exists(c : test(c) and mine(c))
-
-def score {
-    count0[revealed] * revealed_points
-      +
-    count0[exploded_mine] * mine_points
-}
-@outline def count0[{R}]: count[R] <++ 0
-
-def revealed_points { 1 }
-def mine_points { -50 }
 
 // -------------------------------------------------------------------------------
 // -- Game display outputs ---------------------------------------------------------------
@@ -119,3 +107,5 @@ def display_grid {
 }
 
 def display { "\n%display_grid\n" }
+
+*/

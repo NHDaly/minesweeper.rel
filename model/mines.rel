@@ -83,13 +83,42 @@ declare flag(vs...) requires {Coord}(vs...)
 def correct_flag(c in flag): {
     mine((c.x), (c.y))
 }
+def incorrect_flag(c in flag): {
+    not mine((c.x), (c.y))
+}
 
 ic () requires disjoint(flag, test)
 
 // Game moves
-declare insert(:test, vs...) requires {[:test] : Coord}(:test, vs...)
-declare insert(:flag, vs...) requires {[:flag] : Coord}(:flag, vs...)
+declare insert(:test, vs...) requires {Coord}(vs...)
+declare insert(:flag, vs...) requires {Coord}(vs...)
+
+ic cant_flag_revealed(x,y) requires {
+    insert(:flag, ^Coord[x,y]) implies
+        not revealed(^Coord[x,y]) // can't flag a revealed cell
+}
 
 // no cheating :P
 // ic { not count[insert:test] > 1 }
 // ic { not count[insert:flag] > 1 }
+
+// -----------------
+
+// Victory and game_over aren't defined anymore in an infinite grid.
+// def victory { count[flag] = count[correct_flag] = count[mine] }
+// def game_over = exists(c : test(c) and mine(c))
+
+def score {
+    count0[revealed] * revealed_points
+      +
+    count0[exploded_mine] * mine_points
+      +
+    count0[correct_flag] * flag_points
+      +
+    count0[incorrect_flag] * -1 * flag_points
+}
+@outline def count0[{R}]: count[R] <++ 0
+
+def revealed_points { 1 }
+def mine_points { -50 }
+def flag_points {  5 }

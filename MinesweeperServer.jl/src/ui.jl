@@ -8,44 +8,70 @@ route("/") do
 end
 fake_data() = make_json([(rand(0:15),rand(0:15),rand([" ", ".", "1", "2", "!"])) for _ in 1:10])
 make_json(data) = join((v for (r,c,v) in data))
-function print_grid(data, w, h, x, y)
-   prev_r = nothing
-   for (i,_,v) in data
-      if i != prev_r
-         if prev_r !== nothing
-            println()
+function print_grid(grid, flags, mines, w, h, x, y)
+   @show flags
+   for r in (y - h÷2):(y + h÷2 - 1)
+      print("$(lpad(r, 2)) ")
+      for c in (x - w÷2):(x + w÷2 - 1)
+         if haskey(flags, (c, r))
+            print("! ")
+         elseif haskey(mines, (c, r))
+            print("x ")
+         elseif haskey(grid, (c, r))
+            v = grid[(c, r)]
+            if v == 0
+               print("  ")
+            else
+               print("$(v) ")
+            end
+         else
+            print(". ")
          end
-         print("$(lpad(i-(w÷2 - x),2)) ")
-         prev_r = i
       end
-      print("$v ")
+      println()
    end
-   println()
 
-   # foreach(println, ("$(lpad(r-(h÷2 - y),2)) " * join((v for c in 1:w for v in data[r,c]), " ") for r in 1:h))
-   print("  ")
-   for c in 1:w
-      print("$(lpad(c-(w÷2 - x),2))")
+   print(" ")
+   for c in (x - w÷2):(x + w÷2 - 1)
+      print("$(lpad(c, 2))")
    end
    println()
 end
 
+function get_table_dict(rsp, idx)
+   if idx === nothing
+      return Dict()
+   end
+   @assert idx > 0 && idx <= length(rsp.results)
+   table = rsp.results[idx][2]
+   data = zip(table...)
+   return Dict(tup_keys(tup) => tup_val(tup) for tup in data)
+end
+tup_keys(tup) = tup[1:end-1]
+tup_val(tup) = tup[end]
+
 function display_data(rsp, w, h, cx, cy)
    @info "Query output"
-   @assert length(rsp.results) >= 2
-   if length(rsp.results) > 2
+   @assert length(rsp.results) >= 1
+   if length(rsp.results) > 4
       @warn first.(rsp.results)
    end
    score_idx = findfirst(x -> startswith(x[1], "/:output/:score/"), rsp.results)
-   grid_idx = 1 + (2 - score_idx) # (The other one)
-   table = rsp.results[grid_idx][2]
-   data = zip(table[1], table[2], table[3])
+   show_cell_idx = findfirst(x -> startswith(x[1], "/:output/:show_cell/"), rsp.results)
+   show_flag_idx = findfirst(x -> startswith(x[1], "/:output/:show_flag/"), rsp.results)
+   show_mine_idx = findfirst(x -> startswith(x[1], "/:output/:show_mine/"), rsp.results)
 
    score = rsp.results[score_idx][2][1][1]
-   global DATA = data
-   print_grid(data, w, h, cx, cy)
+   print_grid(
+      get_table_dict(rsp, show_cell_idx),
+      get_table_dict(rsp, show_flag_idx),
+      get_table_dict(rsp, show_mine_idx),
+      w, h, cx, cy)
    println("Score: ", score)
-   return JSON3.write(Dict("grid" => make_json(data), "score" => score))
+
+   # TODO: JSON
+   # data = get_table_dict(rsp, show_cell_idx)
+   # return JSON3.write(Dict("grid" => make_json(data), "score" => score))
 end
 
 function handle_display(screen_w, screen_h, screen_x, screen_y)
@@ -59,14 +85,11 @@ function handle_display(screen_w, screen_h, screen_x, screen_y)
    #        for (r,c) in cells
    #     ), "\n"))
    rsp = exec(ctx, database, engine, """
-      def insert[:screen_width]: { $screen_w }
-      def insert[:screen_height]: { $screen_h }
-      def insert[:screen_center]: { ^Coord[$screen_x, $screen_y] }
-      def delete[:screen_width]: { screen_width }
-      def delete[:screen_height]: { screen_height }
-      def delete[:screen_center]: { screen_center }
+      // keep these all arity-3 for consistency
+      def output(:show_cell, x,y,c): { revealed(^Coord[x,y]) and c=mine_count[x,y] }
+      def output(:show_flag, x,y,1): { flag(^Coord[x,y]) }
+      def output(:show_mine, x,y,1): { exploded_mine(^Coord[x,y]) }
 
-      def output[:grid]: screen_grid
       def output[:score]: score
    """, readonly=true)
    return display_data(rsp, screen_w, screen_h, screen_x, screen_y)
@@ -87,14 +110,11 @@ function do_insert(type, x, y; delete=false, screen_w=10, screen_h=10, screen_x=
    query = """
       def $(operation)[:$type]: { ^Coord[$x, $y] }
 
-      def insert[:screen_width]: { $screen_w }
-      def insert[:screen_height]: { $screen_h }
-      def insert[:screen_center]: { ^Coord[$screen_x, $screen_y] }
-      def delete[:screen_width]: { screen_width }
-      def delete[:screen_height]: { screen_height }
-      def delete[:screen_center]: { screen_center }
+      // keep these all arity-3 for consistency
+      def output(:show_cell, x,y,c): { revealed(^Coord[x,y]) and c=mine_count[x,y] }
+      def output(:show_flag, x,y,1): { flag(^Coord[x,y]) }
+      def output(:show_mine, x,y,1): { exploded_mine(^Coord[x,y]) }
 
-      def output[:grid]: screen_grid
       def output[:score]: score
    """
    @show query
