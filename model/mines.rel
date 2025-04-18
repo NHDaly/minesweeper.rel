@@ -95,7 +95,12 @@ declare insert(:flag, vs...) requires {Coord}(vs...)
 
 ic cant_flag_revealed(x,y) requires {
     insert(:flag, ^Coord[x,y]) implies
-        not revealed(^Coord[x,y]) // can't flag a revealed cell
+        not revealed(^Coord[x,y])
+    and not exploded_mine(^Coord[x,y])
+}
+ic cant_test_flagged(x,y) requires {
+    insert(:test, ^Coord[x,y]) implies
+        not flag(^Coord[x,y])
 }
 
 // no cheating :P
