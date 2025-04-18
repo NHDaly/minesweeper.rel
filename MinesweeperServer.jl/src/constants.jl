@@ -1,6 +1,6 @@
 using RAI
 
-engine = "nhd-s"
+engine = "nhd-xs-3"
 database = "nhd-minesweeper"
 
 function __init__()

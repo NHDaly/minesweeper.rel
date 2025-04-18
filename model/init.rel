@@ -1,24 +1,24 @@
 // Initialization and reset logic
-bound ever_init = true
-def insert:ever_init = not ever_init
-def insert:reset = not ever_init
+declare ever_init(v...) requires {true}(v...)
+def insert[:ever_init]: not ever_init()
+def insert[:reset]: not ever_init()
 
-bound reset = true
-def delete:seed = seed, insert:reset
-def delete:test = test, insert:reset
-def delete:flag = flag, insert:reset
+declare reset(v...) requires {true}(v...)
+def delete[:seed]: (seed, insert[:reset])
+def delete[:test]: (test, insert[:reset])
+def delete[:flag]: (flag, insert[:reset])
 
 @function
-bound seed = UInt128
-//def insert:seed = random_uint64[], insert:reset
-def seed = uint128[uint64[10]]
+declare seed(v...) requires {UInt128}(v...)
+//def insert[:seed]: { random_uint64[], insert(:reset) }
+def seed { uint128[uint64[10]] }
 
 // (Temporary code to work around the FD-inference bug):
 // Initialize the EDBs to have more than 1 values
-def insert:test = (^Coord[1,1]; ^Coord[2,2]), not ever_init
-def insert:flag = (^Coord[3,3]; ^Coord[4,4]), not ever_init
+def insert[:test]: (({^Coord[1,1]; ^Coord[2,2]}), not ever_init())
+def insert[:flag]: (({^Coord[3,3]; ^Coord[4,4]}), not ever_init())
 
 
-ic { exists(screen_center) implies count[screen_center] = 1 }
-ic { exists(screen_center) implies count[screen_width] = 1 }
-ic { exists(screen_center) implies count[screen_height] = 1 }
+ic () requires not empty(screen_center) implies count[screen_center] = 1
+ic () requires not empty(screen_center) implies count[screen_width] = 1
+ic () requires not empty(screen_center) implies count[screen_height] = 1

@@ -1,8 +1,8 @@
 // install
 
-value type Coord = Int,Int  // x,y
-def x[c in Coord](v) = ^Coord[v, _](c)
-def y[c in Coord](v) = ^Coord[_, v](c)
+value type Coord {(Int,Int)}  // x,y
+def x(c in Coord, v): ^Coord(v, _, c)
+def y(c in Coord, v): ^Coord(_, v, c)
 
 // def game_width = 16
 // def game_height = 16
@@ -13,14 +13,14 @@ def y[c in Coord](v) = ^Coord[_, v](c)
 // ]
 
 // ----------------------------
-bound mine = Coord
+declare mine(v...) requires {Coord}(v...)
 
 // Mines are placed randomly throughout the infinite grid. Since they're infinite, we can't
 // compute them all, and instead they must be _derived_ based on a function of the
 // coordinate. We use a hash function to do this.
 
-@ondemand
-def mine(c in Coord) {
+// @ondemand
+def mine(c in Coord): {
     // The original game has 40 mines in a 16x16 grid, or 256 cells.
     // Rate of seeds: 40 / 256 = 15.625%, or 10 in 64
     murmurhash3f_with_seed[seed, c] % 64 < 10  // 15.625%
@@ -28,47 +28,48 @@ def mine(c in Coord) {
 
 // ----------------------------
 
-@ondemand
-def neighbor[c in Coord] {
-    ^Coord[x2, y2]
-    from x2 in (c.x-1; c.x; c.x+1), y2 in (c.y-1; c.y; c.y+1)
-    where not (x2 = c.x and y2 = c.y)
+// @ondemand
+def neighbor[c in Coord]: (out): {
+    exists((x2, y2) | {
+        out = ^Coord[x2, y2]
+        where {( c.y )-1; ( c.y ); ( c.y )+1}(y2)
+          and {( c.x )-1; ( c.x ); ( c.x )+1}(x2)
+          and not (x2 = (c.x) and y2 = (c.y))
+    })
 }
 
-def mine_count[c in Coord] {
-    count[n in neighbor[c] : mine(n)]
+def mine_count[c in Coord]: {
+    count[(n): mine(n) where neighbor(c, n)]
 }
 
-bound test = Coord
-def correct_test(c in test) {
+declare test(vs...) requires {Coord}(vs...)
+def correct_test(c in test): {
     not mine(c)
 }
 
-def exploded_mine(c in test) {
+def exploded_mine(c in test): {
     mine(c)
 }
-ic { disjoint(correct_test, exploded_mine) }
+ic () requires disjoint(correct_test, exploded_mine)
 
 // This should now be concrete! It will stop when it encounters enough mines.
-def revealed(c in Coord) = correct_test(c)
-def revealed(c in Coord) {
-    neighbor[r](c)
-    from r
-    where
+def revealed(c in Coord): correct_test(c)
+def revealed(c in Coord): {
+    exists((r) | neighbor(r, c) where
         revealed(r)
-        and not exists(r.mine_count)
+        and empty(( r.mine_count )))
 }
 
-bound flag = Coord
-def correct_flag(c in flag) {
+declare flag(vs...) requires {Coord}(vs...)
+def correct_flag(c in flag): {
     mine(c)
 }
 
-ic { disjoint(flag, test) }
+ic () requires disjoint(flag, test)
 
 // Game moves
-bound insert:test = Coord
-bound insert:flag = Coord
+declare insert(:test, vs...) requires {[:test] : Coord}(:test, vs...)
+declare insert(:flag, vs...) requires {[:flag] : Coord}(:flag, vs...)
 
 // no cheating :P
 // ic { not count[insert:test] > 1 }

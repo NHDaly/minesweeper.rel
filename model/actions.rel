@@ -7,10 +7,10 @@
 // The client keeps track of the screen center and the screen size, and they
 // set it while calling these updates.
 
-bound insert_test = Int, Int
-def insert:test = coords:gc[^ScreenCoord[r, c]] from r,c where insert_test(r, c)
+declare insert_test(trail...) requires {(Int, Int)}(trail...)
+def insert(:test, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where insert_test(r, c)})
 
-bound insert_flag = Int, Int
-def insert:flag = coords:gc[^ScreenCoord[r, c]] from r,c where insert_flag(r, c)
-bound delete_flag = Int, Int
-def delete:flag = coords:gc[^ScreenCoord[r, c]] from r,c where delete_flag(r, c)
+declare insert_flag(trail...) requires {(Int, Int)}(trail...)
+def insert(:flag, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where insert_flag(r, c)})
+declare delete_flag(trail...) requires {(Int, Int)}(trail...)
+def delete(:flag, cc): exists((r,c) | {cc = coords[:gc, ^ScreenCoord[r, c]] where delete_flag(r, c)})

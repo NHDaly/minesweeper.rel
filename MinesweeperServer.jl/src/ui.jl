@@ -7,10 +7,7 @@ route("/") do
    read(index, String)
 end
 fake_data() = make_json([(rand(0:15),rand(0:15),rand([" ", ".", "1", "2", "!"])) for _ in 1:10])
-make_json(data) = [
-   v
-   for (r,c,v) in data
-]
+make_json(data) = join((v for (r,c,v) in data))
 
 function display_data(rsp)
    @info "Query output"
@@ -24,22 +21,25 @@ function display_data(rsp)
    return JSON3.write(Dict("grid" => make_json(data), "score" => score))
 end
 
-route("/display") do
+function handle_display(new_w, new_h, x, y)
    @info "Running display query!"
+
+   rsp = exec(ctx, database, engine, """
+      def insert[:screen_width]: { $new_w }
+      def insert[:screen_height]: { $new_h }
+      def insert[:screen_center]: { ^Coord[$x, $y] }
+
+      def output[:grid]: screen_grid
+      def output[:score]: score
+   """, readonly=true)
+   return display_data(rsp)
+end
+route("/display") do
    new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))
    x, y = parse.(Int, (params(:center_x), params(:center_y)))
    @show new_w, new_h
    @show x, y
-
-   rsp = exec(ctx, database, engine, """
-      def screen_width = $new_w
-      def screen_height = $new_h
-      def screen_center = ^Coord[$x, $y]
-
-      def output:grid = screen_grid
-      def output:score = score
-   """, readonly=true)
-   return display_data(rsp)
+   handle_display(new_w, new_h, x, y)
 end
 
 function do_insert(type, x, y; delete=false)
@@ -51,14 +51,14 @@ function do_insert(type, x, y; delete=false)
    operation = delete ? "delete" : "insert"
    @show operation
    query = """
-      def $(operation):$type = ^Coord[$x, $y]
+      def $(operation)[:$type] { ^Coord[$x, $y] }
 
-      def screen_width = $new_w
-      def screen_height = $new_h
-      def screen_center = ^Coord[$screen_x, $screen_y]
+      def insert[:screen_width]: { $new_w }
+      def insert[:screen_height]: { $new_h }
+      def insert[:screen_center]: { ^Coord[$x, $y] }
 
-      def output:grid = screen_grid
-      def output:score = score
+      def output[:grid]: screen_grid
+      def output[:score]: score
    """
    @show query
    rsp = exec(ctx, database, engine, query, readonly=false)

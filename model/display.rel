@@ -1,3 +1,4 @@
+
 // install
 
 // These will be set during the query, to render a given portion of the screen
@@ -11,94 +12,90 @@
 // ```
 
 @function
-bound screen_center = Coord
+declare screen_center(vs...) requires {Coord}(vs...)
 @function
-bound screen_width = Int
+declare screen_width(vs...) requires {Int}(vs...)
 @function
-bound screen_height = Int
+declare screen_height(vs...) requires {Int}(vs...)
 
-@ondemand
-def coords = coord_conversion[screen_center, screen_width, screen_height]
+// @ondemand
+@inline
+def coords { coord_conversion[screen_center, screen_width, screen_height] }
 
-@ondemand
-def display_cell[row, col] {
-    cell[c]
-    from c, sc
-    where sc = ^ScreenCoord[row, col]
-      and c = coords:gc[sc]
+// @ondemand
+def display_cell[row, col]: (out): {
+    exists((c, sc) | {
+        out = cell[c]
+        where sc = ^ScreenCoord[row, col]
+        and c = coords[:gc, sc]
+    })
 }
 
 // Split this out to make the if/else simpler in cell[].
-@ondemand
-def _cell[c in Coord] = {
-    flag(c), "!";
-    revealed(c), (string[mine_count[c]] <++ " ");
-    exploded_mine(c), "x";
+// @ondemand
+def _cell[c in Coord]: {
+    (flag(c), "!");
+    (revealed(c), (string[mine_count[c]] <++ " "));
+    (exploded_mine(c), "x");
 }
-@ondemand
-def cell[c in Coord] = {
+// @ondemand
+def cell[c in Coord]: {
     _cell[c];
-    (not exists _cell[c]), ".";
+    (empty(_cell[c]), ".");
 }
 
 
-def view_r = range[1, screen_height, 1]
-def view_c = range[1, screen_width, 1]
+def view_r { range[1, screen_height, 1] }
+def view_c { range[1, screen_width, 1] }
 
 // Victory and game_over aren't defined anymore in an infinite grid.
 // def victory { count[flag] = count[correct_flag] = count[mine] }
 // def game_over = exists(c : test(c) and mine(c))
 
-def score = {
+def score {
     count0[revealed] * revealed_points
       +
     count0[exploded_mine] * mine_points
 }
-@outline def count0[R] = count[R] <++ 0
+@outline def count0[{R}]: count[R] <++ 0
 
-def revealed_points = 1
-def mine_points = -50
+def revealed_points { 1 }
+def mine_points { -50 }
 
 // -------------------------------------------------------------------------------
 // -- Game display outputs ---------------------------------------------------------------
 
-def screen_grid = {
-    r in view_r :
-        c in view_c :
-            display_cell[r, c]
+def screen_grid {
+    [r in view_r]: [c in view_c]: display_cell[r, c]
 }
 
 // -------------------------------------------------------------------------------
 // -- Text outputs, which are not used for the actual game, only for debugging. --
 
-def align[d in Int] =
-    if 0 <= d < 10 then
-        " %d"
-    else
-        "%d"
-    end
+def align[d in Int]:
+    if_then_else[0 <= d < 10, " %d", "%d"]
 
 def top_axis {
     """
-        %(string_join["", {c : "%(align[c])", view_c(c)}])
-        %(string_join["", {c : "--", view_c(c)}])
+        %(string_join["", {[c]: ("%(align[c])", view_c(c))}])
+        %(string_join["", {[c]: ("--", view_c(c))}])
     """
 }
-def display_row = {r in view_r : string_join[' ', {
-        c in view_c :
-            display_cell[r, c]
+
+def display_row {[r in view_r]: string_join[' ', {
+        [c in view_c]: display_cell[r, c]
     }]
 }
 
 def display_grid {
     concat[
         top_axis,
-        string_join['\n', { i : {
-            concat["%(align[r]) | ", display_row[r]]
-            // Put 1,1 on the bottom left, so invert the count
-            from r where r = i
+        string_join['\n', { (i, out): {
+            exists((r) | {
+                out = concat["%(align[r]) | ", display_row[r]]
+                where r = i})
         }}]
     ]
 }
 
-def display = "\n%display_grid\n"
+def display { "\n%display_grid\n" }
