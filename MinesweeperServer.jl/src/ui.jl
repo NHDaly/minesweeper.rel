@@ -9,7 +9,20 @@ end
 fake_data() = make_json([(rand(0:15),rand(0:15),rand([" ", ".", "1", "2", "!"])) for _ in 1:10])
 make_json(data) = join((v for (r,c,v) in data))
 function print_grid(data, w, h, x, y)
-   foreach(println, ("$(lpad(r-(h÷2 - y),2)) " * join((v for c in 1:w for v in data[r,c]), " ") for r in 1:h))
+   prev_r = nothing
+   for (i,_,v) in data
+      if i != prev_r
+         if prev_r !== nothing
+            println()
+         end
+         print("$(lpad(i-(w÷2 - x),2)) ")
+         prev_r = i
+      end
+      print("$v ")
+   end
+   println()
+
+   # foreach(println, ("$(lpad(r-(h÷2 - y),2)) " * join((v for c in 1:w for v in data[r,c]), " ") for r in 1:h))
    print("  ")
    for c in 1:w
       print("$(lpad(c-(w÷2 - x),2))")
@@ -30,18 +43,25 @@ function display_data(rsp, w, h, cx, cy)
 
    score = rsp.results[score_idx][2][1][1]
    global DATA = data
-   print_grid(Dict(((i,j) => v) for (i,j,v) in data), w, h, cx, cy)
+   print_grid(data, w, h, cx, cy)
    println("Score: ", score)
    return JSON3.write(Dict("grid" => make_json(data), "score" => score))
 end
 
-function handle_display(new_w, new_h, x, y)
+function handle_display(screen_w, screen_h, screen_x, screen_y)
    @info "Running display query!"
 
+   # cells = [(r - screen_h÷2 + screen_y, c - screen_w÷2 + screen_x)
+   #          for r in 1:screen_h, c in 1:screen_w]
+   # @show cells
+   #     $(join((
+   #        "def output[:grid, $(r), $(c)]: display_cell[$(r), $(c)]"
+   #        for (r,c) in cells
+   #     ), "\n"))
    rsp = exec(ctx, database, engine, """
-      def insert[:screen_width]: { $new_w }
-      def insert[:screen_height]: { $new_h }
-      def insert[:screen_center]: { ^Coord[$x, $y] }
+      def insert[:screen_width]: { $screen_w }
+      def insert[:screen_height]: { $screen_h }
+      def insert[:screen_center]: { ^Coord[$screen_x, $screen_y] }
       def delete[:screen_width]: { screen_width }
       def delete[:screen_height]: { screen_height }
       def delete[:screen_center]: { screen_center }
@@ -49,7 +69,7 @@ function handle_display(new_w, new_h, x, y)
       def output[:grid]: screen_grid
       def output[:score]: score
    """, readonly=true)
-   return display_data(rsp, new_w, new_h, x, y)
+   return display_data(rsp, screen_w, screen_h, screen_x, screen_y)
 end
 route("/display") do
    new_w, new_h = parse.(Int, (params(:screen_width), params(:screen_height)))

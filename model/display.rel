@@ -23,25 +23,28 @@ declare screen_height(vs...) requires {Int}(vs...)
 def coords { coord_conversion[screen_center, screen_width, screen_height] }
 
 // @ondemand
+@inline
 def display_cell[row, col]: (out): {
-    exists((c, sc) | {
-        out = cell[c]
-        where sc = ^ScreenCoord[row, col]
-        and c = coords[:gc, sc]
-    })
+        out = cell[col, row]
+}
+
+def display_mine_count_or_empty[x, y]: {
+    if_then_else[mine_count[x, y] = 0, " ", string[mine_count[x, y]]]
 }
 
 // Split this out to make the if/else simpler in cell[].
 // @ondemand
-def _cell[c in Coord]: {
-    (flag(c), "!");
-    (revealed(c), (string[mine_count[c]] <++ " "));
-    (exploded_mine(c), "x");
+@inline
+def _cell[x, y]: {
+    (flag(^Coord[x,y]), "!");
+    (revealed(^Coord[x,y]), (display_mine_count_or_empty[x, y]));
+    (exploded_mine(^Coord[x,y]), "x");
 }
 // @ondemand
-def cell[c in Coord]: {
-    _cell[c];
-    (empty(_cell[c]), ".");
+@inline
+def cell[x, y]: {
+    _cell[x, y];
+    (empty(_cell[x, y]), ".");
 }
 
 
@@ -65,8 +68,25 @@ def mine_points { -50 }
 // -------------------------------------------------------------------------------
 // -- Game display outputs ---------------------------------------------------------------
 
+// HACK: Works around a perf bug in display_cell:
+// https://relationalai.slack.com/archives/C06PTH5KWTV/p1745014026966109?thread_ts=1744995772.227659&cid=C06PTH5KWTV
+// def spec_r { ::std::mirror::lift[view_r] }
+// // def spec_c { ::std::mirror::lift[view_c] }
+// def spec_screen_grid {
+//     [r in spec_r]: [c in view_c]: display_cell[::std::mirror::lower[r], c]
+// }
+// def screen_grid {
+//     [r in view_r]: [c in view_c]: spec_screen_grid[::std::mirror::lift[r], c]
+// }
+// def screen_grid {
+//     [r in spec_r]: [c in spec_c]: display_cell[r, c]
+// }
+// NEW HACK: Just ask for all [r,c] pairs from the client.
+// That didn't work either.
+
+@nomaintain
 def screen_grid {
-    [r in view_r]: [c in view_c]: display_cell[r, c]
+    [r in view_r]: [c in view_r]: display_cell[r, c]
 }
 
 // -------------------------------------------------------------------------------

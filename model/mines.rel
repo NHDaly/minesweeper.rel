@@ -4,16 +4,16 @@ value type Coord {(Int,Int)}  // x,y
 def x(c in Coord, v): ^Coord(v, _, c)
 def y(c in Coord, v): ^Coord(_, v, c)
 
-def game_width { 24 }
-def game_height { 24 }
+// def game_width { 128 }
+// def game_height { 128 }
 
-def grid { ^Coord[
-    range[-1 * game_width, game_width, 1],
-    range[-1 * game_height, game_height, 1]
-]}
+// def grid { ^Coord[
+//     range[-1 * game_width, game_width, 1],
+//     range[-1 * game_height, game_height, 1]
+// ]}
 
 // ----------------------------
-declare mine(v...) requires {Coord}(v...)
+// declare mine(v...) requires {Coord}(v...)
 
 // Mines are placed randomly throughout the infinite grid. Since they're infinite, we can't
 // compute them all, and instead they must be _derived_ based on a function of the
@@ -21,17 +21,25 @@ declare mine(v...) requires {Coord}(v...)
 
 // @ondemand
 @inline
-def mine(c in Coord): {
+def mine(x, y): {
     // The original game has 40 mines in a 16x16 grid, or 256 cells.
     // Rate of seeds: 40 / 256 = 15.625%, or 10 in 64
-    (murmurhash3f_with_seed[seed, c] % 64) < 10  // 15.625%
+    is_mine[x, y] = 1
 }
+
+// Returns 0 for no mine, and 1 for a mine
+// @inline def is_mine(c in Coord, v):
+//     v = (64 - int64[(murmurhash3f_with_seed[seed, c] % 64)]) ÷ 55
+@inline def is_mine(x, y, v):
+    v = (64 - int64[(hash_coord[x, y] % 64)]) ÷ 55
+@inline def hash_coord[x, y]:
+    murmurhash3f_with_seed[murmurhash3f_with_seed[seed, x], y]
 
 // ----------------------------
 
 // @ondemand
 @inline
-def neighbor[c in grid]: (out): {
+def neighbor[c]: (out): {
     exists((x2, y2) | {
         out = ^Coord[x2, y2]
         where {( c.y )-1; ( c.y ); ( c.y )+1}(y2)
@@ -39,33 +47,41 @@ def neighbor[c in grid]: (out): {
           and not (x2 = (c.x) and y2 = (c.y))
     })
 }
+// @inline
+// def mine_count[c in grid]: {
+//     sum[[n]: is_mine[n] where neighbor(c, n)]
+// }
+// @inline def mine_count[c]:
+//     _mine_count[(c.x), (c.y)]
 
-@inline
-def mine_count[c in grid]: {
-    count[(n): mine(n) where neighbor(c, n)]
-}
+@inline def mine_count[x1, y1]:
+    is_mine[x1 - 1, y1 + 1] + is_mine[x1 + 0, y1 + 1] + is_mine[x1 + 1, y1 + 1] +
+    is_mine[x1 - 1, y1 + 0]                           + is_mine[x1 + 1, y1 + 0] +
+    is_mine[x1 - 1, y1 - 1] + is_mine[x1 + 0, y1 - 1] + is_mine[x1 + 1, y1 - 1]
+
 
 declare test(vs...) requires {Coord}(vs...)
 def correct_test(c in test): {
-    not mine(c)
+    not mine((c.x), (c.y))
 }
 
 def exploded_mine(c in test): {
-    mine(c)
+    mine((c.x), (c.y))
 }
 ic () requires disjoint(correct_test, exploded_mine)
 
 // This should now be concrete! It will stop when it encounters enough mines.
-def revealed(c in grid): { correct_test(c) }
-def revealed(c in grid): {
+def revealed(c): { correct_test(c) }
+def revealed(c): {
     exists((r) | neighbor(r, c) where
         revealed(r)
-        and empty(( r.mine_count )))
+        and mine_count[(r.x), (r.y)] = 0
+    )
 }
 
 declare flag(vs...) requires {Coord}(vs...)
 def correct_flag(c in flag): {
-    mine(c)
+    mine((c.x), (c.y))
 }
 
 ic () requires disjoint(flag, test)
