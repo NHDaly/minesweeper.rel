@@ -1,0 +1,3 @@
+# Tell GitHub to treat our `.rel` files as Scala for syntax
+# highlighting because the Scala highlighting looks decent for Rel. 😅
+*.rel linguist-language=Scala
