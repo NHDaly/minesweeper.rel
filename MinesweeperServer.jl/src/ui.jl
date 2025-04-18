@@ -59,7 +59,7 @@ route("/display") do
    handle_display(new_w, new_h, x, y)
 end
 
-function do_insert(type, x, y; delete=false, new_w=10, new_h=10, screen_x=0, screen_y=0)
+function do_insert(type, x, y; delete=false, screen_w=10, screen_h=10, screen_x=0, screen_y=0)
    @assert type in ("flag", "test")
 
    operation = delete ? "delete" : "insert"
@@ -67,8 +67,8 @@ function do_insert(type, x, y; delete=false, new_w=10, new_h=10, screen_x=0, scr
    query = """
       def $(operation)[:$type]: { ^Coord[$x, $y] }
 
-      def insert[:screen_width]: { $new_w }
-      def insert[:screen_height]: { $new_h }
+      def insert[:screen_width]: { $screen_w }
+      def insert[:screen_height]: { $screen_h }
       def insert[:screen_center]: { ^Coord[$screen_x, $screen_y] }
       def delete[:screen_width]: { screen_width }
       def delete[:screen_height]: { screen_height }
@@ -86,7 +86,7 @@ function do_insert(type, x, y; delete=false, new_w=10, new_h=10, screen_x=0, scr
    #     def output:score = player_score
    #     def output:display = screen_grid
    # """ , readonly=false)
-   return display_data(rsp, new_w, new_h, screen_x, screen_y)
+   return display_data(rsp, screen_w, screen_h, screen_x, screen_y)
 
 end
 route("/test_cell") do

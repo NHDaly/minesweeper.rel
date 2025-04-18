@@ -4,13 +4,13 @@ value type Coord {(Int,Int)}  // x,y
 def x(c in Coord, v): ^Coord(v, _, c)
 def y(c in Coord, v): ^Coord(_, v, c)
 
-// def game_width = 16
-// def game_height = 16
+def game_width { 24 }
+def game_height { 24 }
 
-// def grid = ^Coord[
-//     range[1, game_width, 1],
-//     range[1, game_height, 1]
-// ]
+def grid { ^Coord[
+    range[-1 * game_width, game_width, 1],
+    range[-1 * game_height, game_height, 1]
+]}
 
 // ----------------------------
 declare mine(v...) requires {Coord}(v...)
@@ -24,14 +24,14 @@ declare mine(v...) requires {Coord}(v...)
 def mine(c in Coord): {
     // The original game has 40 mines in a 16x16 grid, or 256 cells.
     // Rate of seeds: 40 / 256 = 15.625%, or 10 in 64
-    murmurhash3f_with_seed[seed, c] % 64 < 10  // 15.625%
+    (murmurhash3f_with_seed[seed, c] % 64) < 10  // 15.625%
 }
 
 // ----------------------------
 
 // @ondemand
 @inline
-def neighbor[c in Coord]: (out): {
+def neighbor[c in grid]: (out): {
     exists((x2, y2) | {
         out = ^Coord[x2, y2]
         where {( c.y )-1; ( c.y ); ( c.y )+1}(y2)
@@ -41,7 +41,7 @@ def neighbor[c in Coord]: (out): {
 }
 
 @inline
-def mine_count[c in Coord]: {
+def mine_count[c in grid]: {
     count[(n): mine(n) where neighbor(c, n)]
 }
 
@@ -56,20 +56,12 @@ def exploded_mine(c in test): {
 ic () requires disjoint(correct_test, exploded_mine)
 
 // This should now be concrete! It will stop when it encounters enough mines.
-def revealed(c in Coord): correct_test(c)
-def revealed(c in Coord): {
+def revealed(c in grid): { correct_test(c) }
+def revealed(c in grid): {
     exists((r) | neighbor(r, c) where
         revealed(r)
         and empty(( r.mine_count )))
 }
-// def revealed(c in Coord): _revealed(0, c)
-// def _revealed(0, c in Coord): correct_test(c)
-// def _revealed(i, c in Coord): {
-//     exists((r) | neighbor(r, c) where
-//         _revealed(i - 1, r)
-//         and empty(( r.mine_count )))
-//     and i < 100
-// }
 
 declare flag(vs...) requires {Coord}(vs...)
 def correct_flag(c in flag): {
